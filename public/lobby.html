@@ -6,41 +6,48 @@
   <title>Lobby – Rathering Game</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    .wrap{position:relative;z-index:1;width:100%;max-width:560px;padding:20px;margin:auto;display:flex;flex-direction:column;gap:20px;min-height:100vh;justify-content:center;}
-    .code-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);padding:32px;text-align:center;}
-    .code-box .hint{font-size:0.7rem;color:var(--text3);margin-top:6px;letter-spacing:0.08em;text-transform:uppercase;}
-    #player-list{display:flex;flex-wrap:wrap;gap:8px;min-height:40px;}
-    #player-count{font-size:0.72rem;color:var(--text3);margin-top:8px;letter-spacing:0.06em;text-transform:uppercase;}
-    .section-label{font-size:0.65rem;font-weight:600;color:var(--text3);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:12px;display:block;}
-    .actions{display:flex;flex-direction:column;gap:8px;}
-    #btn-start{display:none;}
-    .waiting{text-align:center;font-size:0.82rem;color:var(--text3);padding:10px 0;letter-spacing:0.06em;text-transform:uppercase;}
+    .lobby-card { padding: 48px; width: 100%; }
+    .code-box { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r); padding: 28px; text-align: center; margin-bottom: 32px; }
+    .code-box .hint { font-size: 0.75rem; color: var(--text3); margin-top: 6px; }
+    #player-list { display: flex; flex-wrap: wrap; gap: 8px; min-height: 44px; }
+    #player-count { font-size: 0.78rem; color: var(--text3); margin-top: 8px; }
+    .players-section { margin-bottom: 24px; }
+    .players-section .label-upper { margin-bottom: 12px; display: block; }
+    .bottom-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
+    #btn-start { display: none; }
+    .waiting-msg { text-align: center; color: var(--text3); font-size: 0.88rem; padding: 12px 0; }
+    .status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: blink 2s ease-in-out infinite; }
+    @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.2;} }
   </style>
 </head>
 <body>
 <canvas id="bg-canvas"></canvas>
-<div class="wrap">
-  <div>
-    <div class="live-badge" style="margin-bottom:16px;"><span class="dot"></span>Lobby</div>
-    <h2 class="title-xl" style="font-size:clamp(2.5rem,6vw,4rem);">Warte auf<br>Spieler</h2>
-  </div>
+<div class="page-wrap">
+  <div class="glass-card lobby-card fade-in">
+    <div class="status-row">
+      <div class="live-dot"></div>
+      <span class="label-upper">Lobby</span>
+    </div>
 
-  <div class="code-box">
-    <div class="section-label">Raum-Code</div>
-    <div class="room-code" id="room-code" onclick="copyCode()">——</div>
-    <div class="hint">Klicken zum Kopieren</div>
-  </div>
+    <div class="code-box">
+      <div class="label-upper" style="margin-bottom:10px;">Raum-Code</div>
+      <div class="room-code" id="room-code" onclick="copyCode()">——</div>
+      <div class="hint">Klicken zum Kopieren</div>
+    </div>
 
-  <div class="glass-card" style="padding:24px;">
-    <span class="section-label">Spieler</span>
-    <div id="player-list"></div>
-    <div id="player-count"></div>
-  </div>
+    <div class="players-section">
+      <span class="label-upper">Spieler</span>
+      <div id="player-list"></div>
+      <div id="player-count"></div>
+    </div>
 
-  <div class="actions">
-    <button class="btn btn-primary btn-full" id="btn-start" onclick="startUpload()">Spiel starten →</button>
-    <div class="waiting" id="waiting-msg">Warte auf den Host…</div>
-    <button class="btn btn-ghost btn-full" onclick="leaveRoom()">Verlassen</button>
+    <div class="divider"></div>
+    <div class="bottom-actions">
+      <button class="btn btn-primary btn-full" id="btn-start" onclick="startUpload()">Spiel starten</button>
+      <div class="waiting-msg" id="waiting-msg">Warte auf den Host…</div>
+      <button class="btn btn-ghost btn-full" onclick="leaveRoom()">Verlassen</button>
+    </div>
   </div>
 </div>
 <div id="toast"></div>
@@ -48,24 +55,25 @@
 <script src="shared.js"></script>
 <script>
   initStarfield();
-  const role=Session.get('role');let code=Session.get('code');const name=Session.get('name');
-  if(!code||!role||!name)window.location.href='/';
+  const role=Session.get('role'); let code=Session.get('code'); const name=Session.get('name');
+  if(!code||!role||!name) window.location.href='/';
   document.getElementById('room-code').textContent=code;
   if(role==='host'){document.getElementById('btn-start').style.display='flex';document.getElementById('waiting-msg').style.display='none';}
   const socket=io();
-  socket.on('connect',()=>{if(role==='host')socket.emit('host_rejoin',{code,hostName:name});else socket.emit('join_room',{code,playerName:name});});
-  socket.on('host_rejoined',({code:c})=>{code=c;Session.set('code',c);document.getElementById('room-code').textContent=c;});
+  socket.on('connect',()=>{ if(role==='host') socket.emit('host_rejoin',{code,hostName:name}); else socket.emit('join_room',{code,playerName:name}); });
+  socket.on('host_rejoined',({code:c})=>{ code=c; Session.set('code',c); document.getElementById('room-code').textContent=c; });
   socket.on('lobby_update',({players,hostName})=>{
-    const list=document.getElementById('player-list');list.innerHTML='';
-    const hb=document.createElement('div');hb.className='host-badge';hb.innerHTML=`👑 ${hostName}`;list.appendChild(hb);
-    players.forEach(p=>{const pill=document.createElement('div');pill.className='player-pill'+(p.hasImage?' uploaded':'');pill.innerHTML=`<span class="dot"></span>${p.name}${p.hasImage?' ✓':''}`;list.appendChild(pill);});
+    const list=document.getElementById('player-list'); list.innerHTML='';
+    const hb=document.createElement('div'); hb.className='host-badge';
+    hb.innerHTML=`👑 ${hostName}`; list.appendChild(hb);
+    players.forEach(p=>{ const pill=document.createElement('div'); pill.className='player-pill'+(p.hasImage?' uploaded':''); pill.innerHTML=`<span class="dot"></span>${p.name}${p.hasImage?' ✓':''}`; list.appendChild(pill); });
     document.getElementById('player-count').textContent=`${players.length} Spieler beigetreten`;
   });
-  socket.on('phase_upload',()=>{window.location.href='/upload.html';});
+  socket.on('phase_upload',()=>{ window.location.href='/upload.html'; });
   socket.on('error',msg=>showToast('❌ '+msg));
   function copyCode(){navigator.clipboard.writeText(code).then(()=>showToast('Code kopiert'));}
-  function startUpload(){if(role!=='host')return;socket.emit('start_upload',{code});}
-  function leaveRoom(){Session.clear();window.location.href='/';}
+  function startUpload(){if(role!=='host') return; socket.emit('start_upload',{code});}
+  function leaveRoom(){Session.clear(); window.location.href='/';}
 </script>
 </body>
 </html>
