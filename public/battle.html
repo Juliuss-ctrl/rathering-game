@@ -8,21 +8,21 @@
   <style>
     body{overflow:hidden;}
     .battle-page{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh;}
-    .battle-header{padding:24px 48px 14px;display:flex;flex-direction:column;gap:8px;flex-shrink:0;}
+    .battle-header{padding:20px 40px 12px;display:flex;flex-direction:column;gap:8px;flex-shrink:0;}
     .battle-meta{display:flex;justify-content:space-between;align-items:center;}
-    .battle-q{text-align:center;font-size:clamp(1.1rem,2vw,1.5rem);font-weight:600;color:var(--text);padding-top:8px;letter-spacing:-0.01em;}
-    .arena{flex:1;display:flex;align-items:center;justify-content:center;padding:10px 40px;gap:20px;}
-    .battle-card{flex:1;max-width:500px;min-height:0;}
-    .battle-card img{max-width:100%;max-height:calc(100vh-280px);object-fit:contain;border-radius:10px;}
-    .card-name{font-size:1.1rem;font-weight:600;color:var(--text);text-align:center;margin-top:10px;letter-spacing:-0.01em;}
-    .card-desc{font-size:0.8rem;color:var(--text3);text-align:center;margin-top:3px;}
-    .no-image{width:100%;height:200px;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:0.88rem;border:1px dashed var(--border2);border-radius:10px;}
-    .battle-footer{padding:10px 48px 24px;text-align:center;flex-shrink:0;}
-    #vote-status{font-size:0.85rem;color:var(--text2);margin-bottom:6px;min-height:20px;}
-    .hint{font-size:0.7rem;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;}
-    .voted-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.04);border-radius:var(--r2);pointer-events:none;opacity:0;transition:opacity 0.2s;font-size:3rem;}
+    .battle-q{font-family:var(--font-title);text-align:center;font-size:clamp(1.4rem,3vw,2.2rem);font-weight:900;letter-spacing:0.04em;text-transform:uppercase;color:var(--text);padding-top:6px;}
+    .arena{flex:1;display:flex;align-items:center;justify-content:center;padding:10px 36px;gap:16px;}
+    .battle-card{flex:1;max-width:480px;min-height:0;}
+    .battle-card img{max-width:100%;max-height:calc(100vh-260px);object-fit:contain;border-radius:8px;}
+    .card-name{font-family:var(--font-title);font-size:1.2rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:var(--text);text-align:center;margin-top:10px;}
+    .card-desc{font-size:0.78rem;color:var(--text3);text-align:center;margin-top:3px;}
+    .no-image{width:100%;height:180px;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:0.85rem;border:1px dashed var(--border2);border-radius:8px;}
+    .battle-footer{padding:8px 40px 20px;text-align:center;flex-shrink:0;}
+    #vote-status{font-size:0.8rem;color:var(--text2);margin-bottom:6px;min-height:18px;letter-spacing:0.04em;}
+    .hint{font-size:0.62rem;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;}
+    .voted-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.04);border-radius:var(--r2);pointer-events:none;opacity:0;transition:opacity 0.2s;font-size:2.5rem;}
     .battle-card.voted .voted-overlay{opacity:1;}
-    @media(max-width:700px){.arena{flex-direction:column;padding:8px 16px;gap:12px;}.battle-card{max-width:100%;}.battle-header{padding:18px 20px 10px;}.battle-footer{padding:8px 20px 18px;}}
+    @media(max-width:700px){.arena{flex-direction:column;padding:8px 16px;gap:10px;}.battle-card{max-width:100%;}.battle-header,.battle-footer{padding-left:20px;padding-right:20px;}}
   </style>
 </head>
 <body>
@@ -31,7 +31,7 @@
   <div class="battle-header">
     <div class="battle-meta">
       <span class="label-upper" id="round-label">Runde 1 / ?</span>
-      <span class="label-upper" id="code-label">——</span>
+      <div class="live-badge"><span class="dot"></span><span id="code-label">——</span></div>
     </div>
     <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
     <div class="battle-q">Was gefällt dir besser?</div>
@@ -58,11 +58,11 @@
 <script>
   initStarfield();
   const role=Session.get('role'),code=Session.get('code'),name=Session.get('name');
-  if(!code) window.location.href='/';
+  if(!code)window.location.href='/';
   document.getElementById('code-label').textContent=code;
   const socket=io();
   socket.on('connect',()=>{
-    if(role==='host') socket.emit('host_rejoin',{code,hostName:name});
+    if(role==='host')socket.emit('host_rejoin',{code,hostName:name});
     else socket.emit('join_room',{code,playerName:name});
     setTimeout(()=>socket.emit('request_current_pair',{code}),300);
   });
@@ -80,7 +80,7 @@
     const imgWrap=document.getElementById('img-'+side);
     document.getElementById('name-'+side).textContent=data?data.name:'—';
     document.getElementById('desc-'+side).textContent=data?data.desc:'';
-    if(data&&data.path) imgWrap.innerHTML=`<img src="${data.path}" alt="${data.name}" onerror="this.parentElement.innerHTML='<div class=\\'no-image\\'>Nicht gefunden</div>'">`;
+    if(data&&data.path)imgWrap.innerHTML=`<img src="${data.path}" alt="${data.name}" onerror="this.parentElement.innerHTML='<div class=\\'no-image\\'>Nicht gefunden</div>'">`;
     else if(!data){imgWrap.innerHTML=`<div class="no-image">Automatisch weiter</div>`;document.getElementById('card-'+side).style.opacity='0.3';}
     else imgWrap.innerHTML=`<div class="no-image">Kein Bild</div>`;
   }
@@ -93,8 +93,8 @@
     document.getElementById('vote-status').textContent=`✓ ${winner.name} gewählt`;
     socket.emit('vote',{code,winnerName:winner.name});
   }
-  socket.on('vote_update',({votedCount,total})=>{ document.getElementById('vote-status').textContent=`${votedCount} / ${total} haben abgestimmt`; });
-  socket.on('show_results',({results})=>{ Session.set('results',results); window.location.href='/results.html'; });
+  socket.on('vote_update',({votedCount,total})=>{document.getElementById('vote-status').textContent=`${votedCount} / ${total} haben abgestimmt`;});
+  socket.on('show_results',({results})=>{Session.set('results',results);window.location.href='/results.html';});
   socket.on('error',msg=>showToast('❌ '+msg));
 </script>
 </body>
