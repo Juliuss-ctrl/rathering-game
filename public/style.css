@@ -30,7 +30,7 @@ html, body {
   overflow-x: hidden;
 }
 
-#bg-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.25; }
+#bg-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 1; }
 
 .page-wrap {
   position: relative; z-index: 1;

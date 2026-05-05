@@ -2,20 +2,31 @@ function initStarfield() {
   const canvas = document.getElementById('bg-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  let W, H, stars = [];
+  let W, H, stars = [], orbs = [];
   function resize() { W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; }
   function init() {
     resize();
-    stars = Array.from({length:80},()=>({ x:Math.random()*W, y:Math.random()*H, r:Math.random()*0.8+0.2, phase:Math.random()*Math.PI*2 }));
+    stars = Array.from({length:140},()=>({ x:Math.random()*W, y:Math.random()*H, r:Math.random()*1.4+0.2, phase:Math.random()*Math.PI*2, speed:Math.random()*0.008+0.002 }));
+    orbs = [
+      { x:W*0.15, y:H*0.2,  r:350, color:'rgba(124,106,255,0.07)' },
+      { x:W*0.85, y:H*0.7,  r:300, color:'rgba(255,106,176,0.05)' },
+      { x:W*0.5,  y:H*1.0,  r:450, color:'rgba(106,255,218,0.04)' },
+    ];
   }
   let t=0;
   function draw() {
     ctx.clearRect(0,0,W,H);
-    t+=0.008;
+    ctx.fillStyle='#050507'; ctx.fillRect(0,0,W,H);
+    orbs.forEach(o=>{
+      const g=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,o.r);
+      g.addColorStop(0,o.color); g.addColorStop(1,'transparent');
+      ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    });
+    t+=0.01;
     stars.forEach(s=>{
-      const f=0.3+0.7*Math.sin(t*0.5+s.phase);
+      const f=0.3+0.7*Math.sin(t*s.speed*60+s.phase);
       ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
-      ctx.fillStyle=`rgba(255,255,255,${f*0.4})`; ctx.fill();
+      ctx.fillStyle=`rgba(200,200,255,${f*0.6})`; ctx.fill();
     });
     requestAnimationFrame(draw);
   }
