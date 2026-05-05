@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rathering Game</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .card-inner { padding: 48px; width: 100%; }
+
+    .hero { margin-bottom: 40px; }
+    .hero-top { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+    .hero-icon { font-size: 1.6rem; }
+
+    .tabs { display: grid; grid-template-columns: 1fr 1fr; background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 4px; gap: 3px; margin-bottom: 28px; }
+    .tab { background: transparent; border: none; border-radius: 8px; color: var(--text2); font-family: var(--font); font-weight: 500; font-size: 0.9rem; padding: 10px; cursor: pointer; transition: all 0.15s; }
+    .tab.active { background: var(--surface2); color: var(--text); }
+
+    .panel { display: none; flex-direction: column; gap: 16px; }
+    .panel.active { display: flex; }
+
+    .footer-note { font-size: 0.72rem; color: var(--text3); text-align: center; margin-top: 20px; letter-spacing: 0.06em; }
+    .code-input { letter-spacing: 0.2em; font-weight: 600; font-size: 1.1rem; text-align: center; text-transform: uppercase; }
+  </style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div class="page-wrap">
+  <div class="glass-card card-inner fade-in">
+    <div class="hero">
+      <div class="hero-top">
+        <span class="hero-icon">⚔️</span>
+        <span class="label-upper">Rathering Game</span>
+      </div>
+      <h1 class="title-xl">Wer gewinnt?</h1>
+      <p class="sub" style="margin-top:8px;">Lade dein Bild hoch — lass abstimmen.</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('create')">Spiel erstellen</button>
+      <button class="tab"       onclick="switchTab('join')">Beitreten</button>
+    </div>
+
+    <div class="panel active" id="panel-create">
+      <div>
+        <label class="input-label">Dein Name</label>
+        <input class="input" id="host-name" type="text" placeholder="z.B. Julius" maxlength="20" autocomplete="off">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="createGame()">Spiel erstellen</button>
+    </div>
+
+    <div class="panel" id="panel-join">
+      <div>
+        <label class="input-label">Raum-Code</label>
+        <input class="input code-input" id="join-code" type="text" placeholder="ABC123" maxlength="6" autocomplete="off">
+      </div>
+      <div>
+        <label class="input-label">Dein Name</label>
+        <input class="input" id="join-name" type="text" placeholder="z.B. Fabian" maxlength="20" autocomplete="off">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="joinGame()">Beitreten</button>
+    </div>
+
+    <p class="footer-note">GIG — GEWINNEN IST GEIL</p>
+  </div>
+</div>
+<div id="toast"></div>
+<script src="/socket.io/socket.io.js"></script>
+<script src="shared.js"></script>
+<script>
+  initStarfield();
+  const socket = io();
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',(i===0)===(tab==='create')));
+    document.getElementById('panel-create').classList.toggle('active',tab==='create');
+    document.getElementById('panel-join').classList.toggle('active',tab==='join');
+  }
+
+  document.getElementById('host-name').addEventListener('keydown',e=>{ if(e.key==='Enter') createGame(); });
+  document.getElementById('join-name').addEventListener('keydown',e=>{ if(e.key==='Enter') joinGame(); });
+  document.getElementById('join-code').addEventListener('keydown',e=>{ if(e.key==='Enter') joinGame(); });
+  document.getElementById('join-code').addEventListener('input',e=>{ e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,''); });
+
+  function createGame() {
+    const name=document.getElementById('host-name').value.trim();
+    if (!name){showToast('⚠️ Bitte deinen Namen eingeben');return;}
+    socket.emit('create_room',{hostName:name});
+  }
+  function joinGame() {
+    const code=document.getElementById('join-code').value.trim().toUpperCase();
+    const name=document.getElementById('join-name').value.trim();
+    if (!code||code.length<4){showToast('⚠️ Bitte den Raum-Code eingeben');return;}
+    if (!name){showToast('⚠️ Bitte deinen Namen eingeben');return;}
+    socket.emit('join_room',{code,playerName:name});
+  }
+
+  socket.on('room_created',({code,hostName})=>{ Session.set('role','host'); Session.set('code',code); Session.set('name',hostName); window.location.href='/lobby.html'; });
+  socket.on('joined_room',({code,playerName})=>{ Session.set('role','player'); Session.set('code',code); Session.set('name',playerName); window.location.href='/lobby.html'; });
+  socket.on('error',msg=>showToast('❌ '+msg));
+</script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Battle – Rathering Game</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body{overflow:hidden;}
+    .battle-page{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh;}
+    .battle-header{padding:24px 48px 14px;display:flex;flex-direction:column;gap:8px;flex-shrink:0;}
+    .battle-meta{display:flex;justify-content:space-between;align-items:center;}
+    .battle-q{text-align:center;font-size:clamp(1.1rem,2vw,1.5rem);font-weight:600;color:var(--text);padding-top:8px;letter-spacing:-0.01em;}
+    .arena{flex:1;display:flex;align-items:center;justify-content:center;padding:10px 40px;gap:20px;}
+    .battle-card{flex:1;max-width:500px;min-height:0;}
+    .battle-card img{max-width:100%;max-height:calc(100vh-280px);object-fit:contain;border-radius:10px;}
+    .card-name{font-size:1.1rem;font-weight:600;color:var(--text);text-align:center;margin-top:10px;letter-spacing:-0.01em;}
+    .card-desc{font-size:0.8rem;color:var(--text3);text-align:center;margin-top:3px;}
+    .no-image{width:100%;height:200px;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:0.88rem;border:1px dashed var(--border2);border-radius:10px;}
+    .battle-footer{padding:10px 48px 24px;text-align:center;flex-shrink:0;}
+    #vote-status{font-size:0.85rem;color:var(--text2);margin-bottom:6px;min-height:20px;}
+    .hint{font-size:0.7rem;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;}
+    .voted-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.04);border-radius:var(--r2);pointer-events:none;opacity:0;transition:opacity 0.2s;font-size:3rem;}
+    .battle-card.voted .voted-overlay{opacity:1;}
+    @media(max-width:700px){.arena{flex-direction:column;padding:8px 16px;gap:12px;}.battle-card{max-width:100%;}.battle-header{padding:18px 20px 10px;}.battle-footer{padding:8px 20px 18px;}}
+  </style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div class="battle-page">
+  <div class="battle-header">
+    <div class="battle-meta">
+      <span class="label-upper" id="round-label">Runde 1 / ?</span>
+      <span class="label-upper" id="code-label">——</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    <div class="battle-q">Was gefällt dir besser?</div>
+  </div>
+  <div class="arena">
+    <div class="battle-card glass-card" id="card-left" onclick="castVote('left')">
+      <div style="padding:22px;display:flex;flex-direction:column;align-items:center;height:100%;"><div id="img-left"><div class="no-image">Lädt…</div></div><div class="card-name" id="name-left">—</div><div class="card-desc" id="desc-left"></div></div>
+      <div class="voted-overlay">✓</div>
+    </div>
+    <div class="vs-badge">VS</div>
+    <div class="battle-card glass-card" id="card-right" onclick="castVote('right')">
+      <div style="padding:22px;display:flex;flex-direction:column;align-items:center;height:100%;"><div id="img-right"><div class="no-image">Lädt…</div></div><div class="card-name" id="name-right">—</div><div class="card-desc" id="desc-right"></div></div>
+      <div class="voted-overlay">✓</div>
+    </div>
+  </div>
+  <div class="battle-footer">
+    <div id="vote-status"></div>
+    <div class="hint">Klicke auf dein Lieblingsbild</div>
+  </div>
+</div>
+<div id="toast"></div>
+<script src="/socket.io/socket.io.js"></script>
+<script src="shared.js"></script>
+<script>
+  initStarfield();
+  const role=Session.get('role'),code=Session.get('code'),name=Session.get('name');
+  if(!code) window.location.href='/';
+  document.getElementById('code-label').textContent=code;
+  const socket=io();
+  socket.on('connect',()=>{
+    if(role==='host') socket.emit('host_rejoin',{code,hostName:name});
+    else socket.emit('join_room',{code,playerName:name});
+    setTimeout(()=>socket.emit('request_current_pair',{code}),300);
+  });
+  let hasVoted=false,currentLeft=null,currentRight=null;
+  socket.on('new_pair',({pairIndex,totalPairs,left,right})=>{
+    hasVoted=false;currentLeft=left;currentRight=right;
+    document.getElementById('round-label').textContent=`Runde ${pairIndex+1} / ${totalPairs}`;
+    document.getElementById('progress-fill').style.width=Math.round((pairIndex/totalPairs)*100)+'%';
+    document.getElementById('card-left').classList.remove('voted');
+    document.getElementById('card-right').classList.remove('voted');
+    setCard('left',left);setCard('right',right);
+    document.getElementById('vote-status').textContent='';
+  });
+  function setCard(side,data){
+    const imgWrap=document.getElementById('img-'+side);
+    document.getElementById('name-'+side).textContent=data?data.name:'—';
+    document.getElementById('desc-'+side).textContent=data?data.desc:'';
+    if(data&&data.path) imgWrap.innerHTML=`<img src="${data.path}" alt="${data.name}" onerror="this.parentElement.innerHTML='<div class=\\'no-image\\'>Nicht gefunden</div>'">`;
+    else if(!data){imgWrap.innerHTML=`<div class="no-image">Automatisch weiter</div>`;document.getElementById('card-'+side).style.opacity='0.3';}
+    else imgWrap.innerHTML=`<div class="no-image">Kein Bild</div>`;
+  }
+  function castVote(side){
+    if(hasVoted){showToast('Du hast bereits abgestimmt');return;}
+    const winner=side==='left'?currentLeft:currentRight;
+    if(!winner){showToast('Ungültige Wahl');return;}
+    hasVoted=true;soundVote();
+    document.getElementById('card-'+side).classList.add('voted');
+    document.getElementById('vote-status').textContent=`✓ ${winner.name} gewählt`;
+    socket.emit('vote',{code,winnerName:winner.name});
+  }
+  socket.on('vote_update',({votedCount,total})=>{ document.getElementById('vote-status').textContent=`${votedCount} / ${total} haben abgestimmt`; });
+  socket.on('show_results',({results})=>{ Session.set('results',results); window.location.href='/results.html'; });
+  socket.on('error',msg=>showToast('❌ '+msg));
+</script>
+</body>
+</html>

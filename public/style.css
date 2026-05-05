@@ -1,0 +1,218 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg:       #0a0a0a;
+  --bg2:      #111111;
+  --surface:  #161616;
+  --surface2: #1e1e1e;
+  --border:   #2a2a2a;
+  --border2:  #333333;
+  --accent:   #ffffff;
+  --text:     #ffffff;
+  --text2:    #888888;
+  --text3:    #444444;
+  --gold:     #f5c842;
+  --silver:   #aaaaaa;
+  --bronze:   #cc7a4a;
+  --r:        12px;
+  --r2:       18px;
+  --font:     'Inter', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+#bg-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.4; }
+
+.page-wrap {
+  position: relative; z-index: 1;
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 40px 20px;
+}
+
+/* ── Card ── */
+.glass-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+  position: relative; overflow: hidden;
+  width: 100%; max-width: 560px;
+}
+
+/* ── Typography ── */
+.title-xl {
+  font-size: clamp(2.8rem, 6vw, 4.5rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  line-height: 1;
+}
+
+.title-lg {
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.label-upper {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+
+.sub { font-size: 0.95rem; font-weight: 400; color: var(--text2); line-height: 1.6; }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 8px; border: none; border-radius: var(--r);
+  font-family: var(--font); font-weight: 500; font-size: 0.95rem;
+  cursor: pointer; transition: all 0.15s ease;
+  padding: 14px 28px; text-decoration: none;
+}
+.btn:active { transform: scale(0.98); }
+
+.btn-primary {
+  background: var(--text);
+  color: var(--bg);
+  font-weight: 600;
+}
+.btn-primary:hover { background: #e0e0e0; }
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+}
+.btn-ghost:hover { background: var(--surface2); color: var(--text); border-color: #555; }
+
+.btn-full { width: 100%; }
+
+/* ── Inputs ── */
+.input {
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  color: var(--text);
+  font-family: var(--font); font-size: 0.95rem;
+  padding: 14px 16px; outline: none; transition: all 0.15s;
+}
+.input::placeholder { color: var(--text3); }
+.input:focus { border-color: #555; background: var(--surface2); }
+
+.input-label { display: block; font-size: 0.72rem; font-weight: 500; color: var(--text2); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
+
+/* ── Room code ── */
+.room-code {
+  font-size: clamp(3.5rem, 10vw, 6rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  text-align: center;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.room-code:hover { opacity: 0.7; }
+
+/* ── Player pills ── */
+.player-pill {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.88rem; color: var(--text);
+  animation: pill-in 0.2s ease;
+}
+.player-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: #fff; }
+.player-pill.uploaded .dot { background: var(--gold); }
+
+@keyframes pill-in { from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:none;} }
+
+/* ── Progress ── */
+.progress-track { height: 1px; background: var(--border); overflow: hidden; }
+.progress-fill { height: 100%; background: var(--text); transition: width 0.5s ease; }
+
+/* ── Battle cards ── */
+.battle-card {
+  cursor: pointer;
+  border-radius: var(--r2);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  transition: all 0.2s ease;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 14px; padding: 28px;
+  position: relative; overflow: hidden;
+}
+.battle-card:hover { border-color: #555; background: var(--surface2); transform: translateY(-4px); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+.battle-card.voted { border-color: #fff; }
+.battle-card img { max-width:100%; max-height:360px; object-fit:contain; border-radius:10px; }
+
+.vs-badge {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--surface2); border: 1px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; color: var(--text2);
+  flex-shrink: 0;
+}
+
+/* ── Results ── */
+.podest-grid { display:flex; align-items:flex-end; justify-content:center; gap:12px; width:100%; max-width:860px; }
+.podest-item { display:flex; flex-direction:column; align-items:center; gap:10px; border-radius:var(--r2); border:1px solid var(--border); background:var(--surface); padding:28px 20px; flex:1; max-width:260px; opacity:0; animation:rise 0.4s ease forwards; }
+.podest-item:nth-child(1){animation-delay:0.1s;}
+.podest-item:nth-child(2){animation-delay:0s;min-height:340px;}
+.podest-item:nth-child(3){animation-delay:0.2s;}
+@keyframes rise{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:none;}}
+.podest-item.gold   { border-color:rgba(245,200,66,0.3); }
+.podest-item.silver { border-color:rgba(170,170,170,0.2); }
+.podest-item.bronze { border-color:rgba(204,122,74,0.2); }
+.podest-avatar { width:88px; height:88px; object-fit:cover; border-radius:50%; border:2px solid var(--border2); }
+.gold .podest-avatar   { border-color:var(--gold); }
+.silver .podest-avatar { border-color:var(--silver); }
+.bronze .podest-avatar { border-color:var(--bronze); }
+.podest-medal { font-size:2rem; }
+.podest-name  { font-size:1rem; font-weight:600; color:var(--text); text-align:center; }
+.podest-votes { font-size:0.78rem; color:var(--text2); }
+.podest-desc  { font-size:0.75rem; color:var(--text3); text-align:center; line-height:1.5; }
+
+.result-row { display:flex; align-items:center; gap:14px; border-radius:var(--r); border:1px solid var(--border); background:var(--surface); padding:12px 18px; opacity:0; animation:rise 0.3s ease forwards; }
+.result-row img { width:44px; height:44px; object-fit:cover; border-radius:50%; border:1px solid var(--border2); }
+
+/* ── Upload ── */
+.upload-zone { border:1px dashed var(--border2); border-radius:var(--r2); padding:48px 24px; text-align:center; cursor:pointer; transition:all 0.15s; }
+.upload-zone:hover,.upload-zone.drag-over { border-color:#555; background:var(--surface2); }
+.upload-zone img { max-width:100%; max-height:220px; object-fit:contain; border-radius:10px; margin-top:14px; }
+
+/* ── Toast ── */
+#toast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(70px); background:var(--surface2); border:1px solid var(--border2); color:var(--text); padding:12px 24px; border-radius:8px; font-size:0.88rem; z-index:999; transition:transform 0.25s ease; pointer-events:none; }
+#toast.show { transform:translateX(-50%) translateY(0); }
+
+.divider { height:1px; background:var(--border); width:100%; }
+
+@keyframes fade-in{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+.fade-in { animation:fade-in 0.4s ease forwards; }
+
+.host-badge { display:inline-flex; align-items:center; gap:8px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:8px 14px; font-size:0.88rem; color:var(--gold); }
+
+@media(max-width:700px){
+  .battle-grid{grid-template-columns:1fr;}
+  .vs-badge{justify-self:center;}
+  .podest-grid{flex-direction:column;align-items:center;}
+  .podest-item{max-width:100%;width:100%;min-height:unset!important;}
+}
