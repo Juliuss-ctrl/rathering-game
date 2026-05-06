@@ -1,5 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Inter:wght@300;400;500;600&display=swap');
 
+/* Light mode */
+[data-theme="light"] {
+  --bg:       #f0f0f0;
+  --surface:  #ffffff;
+  --surface2: #e8e8e8;
+  --border:   #dddddd;
+  --border2:  #cccccc;
+  --text:     #000000;
+  --text2:    #555555;
+  --text3:    #999999;
+}
+
+
+
 :root {
   --bg:       #0d0d0d;
   --surface:  #171717;

@@ -7,31 +7,31 @@
   <link rel="stylesheet" href="style.css">
   <style>
     .results-page{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:56px 20px 48px;}
-    .results-header{text-align:center;margin-bottom:48px;width:100%;}
-    .rest-list{width:100%;max-width:580px;display:flex;flex-direction:column;gap:8px;margin-bottom:36px;}
-    .result-rank{font-family:var(--font-title);font-size:1rem;font-weight:800;color:var(--text3);min-width:28px;text-align:center;}
+    .results-header{text-align:center;margin-bottom:48px;}
+    .rest-list{width:100%;max-width:600px;display:flex;flex-direction:column;gap:8px;margin-bottom:36px;}
+    .result-rank{font-size:0.9rem;font-weight:600;color:var(--text3);min-width:28px;text-align:center;}
     .result-info{flex:1;}
-    .result-name{font-family:var(--font-title);font-weight:800;font-size:1rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--text);}
-    .result-votes-text{font-size:0.72rem;color:var(--text2);letter-spacing:0.06em;text-transform:uppercase;}
-    .result-bar-wrap{min-width:90px;}
-    .result-bar-track{height:2px;border-radius:2px;background:var(--border2);overflow:hidden;}
-    .result-bar-fill{height:100%;border-radius:2px;background:#fff;transition:width 0.8s ease;}
-    .result-pct{font-size:0.65rem;color:var(--text3);text-align:right;margin-top:3px;}
-    .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+    .result-name{font-weight:500;font-size:0.95rem;color:var(--text);}
+    .result-votes-text{font-size:0.78rem;color:var(--text2);}
+    .result-bar-wrap{min-width:100px;}
+    .result-bar-track{height:3px;border-radius:2px;background:var(--border2);overflow:hidden;}
+    .result-bar-fill{height:100%;border-radius:2px;background:var(--text);transition:width 0.8s ease;}
+    .result-pct{font-size:0.7rem;color:var(--text3);text-align:right;margin-top:3px;}
+    .actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
   </style>
 </head>
 <body>
 <canvas id="bg-canvas"></canvas>
 <div class="results-page">
   <div class="results-header fade-in">
-    <div class="live-badge" style="margin-bottom:16px;display:inline-flex;"><span class="dot"></span>Ergebnis</div>
-    <h1 class="title-xl">SIEGERPODEST</h1>
+    <div style="font-size:3.5rem;margin-bottom:14px;">🏆</div>
+    <h1 class="title-xl">Ergebnis</h1>
     <p class="sub" style="margin-top:8px;">Die Abstimmung ist beendet.</p>
   </div>
   <div class="podest-grid" id="podest"></div>
   <div class="rest-list" id="rest-list"></div>
   <div class="actions">
-    <button class="btn btn-primary" onclick="playAgain()">Nochmal spielen →</button>
+    <button class="btn btn-primary" onclick="playAgain()">Nochmal spielen</button>
     <button class="btn btn-ghost"   onclick="goHome()">Startseite</button>
   </div>
 </div>
@@ -40,9 +40,13 @@
 <script src="shared.js"></script>
 <script>
   initStarfield();
+  initThemeToggle();
   const role=Session.get('role'),code=Session.get('code'),name=Session.get('name');
   const socket=io();
-  socket.on('connect',()=>{if(role==='host')socket.emit('host_rejoin',{code,hostName:name});else socket.emit('join_room',{code,playerName:name});});
+ socket.on('connect', () => {
+  if (role==='host') socket.emit('host_rejoin',{code,hostName:name});
+  else socket.emit('join_room',{code,playerName:name});
+ });
   soundResult();
   const saved=Session.get('results');if(saved)renderResults(saved);
   socket.on('show_results',({results})=>{Session.set('results',results);renderResults(results);});
@@ -57,7 +61,7 @@
       if(!item)return;
       const origIdx=top3.indexOf(item);
       const el=document.createElement('div');el.className=`podest-item ${classes[origIdx]||''}`;
-      const av=item.imagePath?`<img class="podest-avatar" src="${item.imagePath}" alt="${item.name}" onerror="this.style.display='none'">`:`<div style="width:80px;height:80px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:1.6rem">🙂</div>`;
+      const av=item.imagePath?`<img class="podest-avatar" src="${item.imagePath}" alt="${item.name}" onerror="this.style.display='none'">`:`<div style="width:88px;height:88px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:1.8rem">🙂</div>`;
       el.innerHTML=`<div class="podest-medal">${medals[origIdx]||origIdx+1}</div>${av}<div class="podest-name">${item.name}</div><div class="podest-votes">${item.votes} Stimme${item.votes!==1?'n':''}</div>${item.desc?`<div class="podest-desc">${item.desc}</div>`:''}`;
       podest.appendChild(el);
     });
@@ -65,7 +69,7 @@
     results.slice(3).forEach((item,i)=>{
       const pct=Math.round((item.votes/maxV)*100);
       const row=document.createElement('div');row.className='result-row';row.style.animationDelay=(0.1+i*0.05)+'s';
-      const th=item.imagePath?`<img src="${item.imagePath}" style="width:40px;height:40px;object-fit:cover;border-radius:50%;border:1px solid var(--border2);" onerror="this.style.display='none'">`:``; 
+      const th=item.imagePath?`<img src="${item.imagePath}" style="width:44px;height:44px;object-fit:cover;border-radius:50%;border:1px solid var(--border2);" onerror="this.style.display='none'">`:``;
       row.innerHTML=`<div class="result-rank">${i+4}</div>${th}<div class="result-info"><div class="result-name">${item.name}</div><div class="result-votes-text">${item.votes} Stimme${item.votes!==1?'n':''}</div></div><div class="result-bar-wrap"><div class="result-bar-track"><div class="result-bar-fill" style="width:${pct}%"></div></div><div class="result-pct">${pct}%</div></div>`;
       restList.appendChild(row);
     });

@@ -80,6 +80,7 @@
 <script src="shared.js"></script>
 <script>
   initStarfield();
+  initThemeToggle();
   const socket = io();
   function switchTab(tab) {
     document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',(i===0)===(tab==='create')));

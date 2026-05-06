@@ -55,6 +55,7 @@
 <script src="shared.js"></script>
 <script>
   initStarfield();
+  initThemeToggle();
   const role=Session.get('role'); let code=Session.get('code'); const name=Session.get('name');
   if(!code||!role||!name) window.location.href='/';
   document.getElementById('room-code').textContent=code;

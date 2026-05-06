@@ -60,3 +60,27 @@ function soundClick(){playTone(800,40,0.08);}
 function soundVote(){playTone(600,80,0.12);setTimeout(()=>playTone(900,60,0.08),80);}
 function soundStart(){playTone(500,80,0.10);setTimeout(()=>playTone(630,80,0.10),90);setTimeout(()=>playTone(750,120,0.12),180);}
 function soundResult(){playTone(750,100,0.12);setTimeout(()=>playTone(940,100,0.12),110);setTimeout(()=>playTone(1120,180,0.14),220);}
+
+function initThemeToggle() {
+  const saved = localStorage.getItem('theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+
+  const btn = document.createElement('button');
+  btn.id = 'theme-toggle';
+  btn.textContent = saved === 'dark' ? '☀️' : '🌙';
+  btn.style.cssText = `
+    position: fixed; top: 16px; right: 16px; z-index: 999;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 8px 12px; cursor: pointer;
+    font-size: 1rem; color: var(--text); font-family: var(--font);
+    transition: all 0.15s;
+  `;
+  btn.onclick = () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    btn.textContent = next === 'dark' ? '☀️' : '🌙';
+  };
+  document.body.appendChild(btn);
+}
