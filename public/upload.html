@@ -6,33 +6,32 @@
   <title>Upload – Rathering Game</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    .wrap{position:relative;z-index:1;width:100%;max-width:700px;padding:20px;margin:auto;display:flex;flex-direction:column;gap:20px;min-height:100vh;justify-content:center;}
-    #upload-status{font-size:0.82rem;color:var(--text2);text-align:center;min-height:18px;margin-top:10px;}
-    .players-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-top:4px;}
-    .section-label{font-size:0.65rem;font-weight:600;color:var(--text3);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:10px;display:block;}
-    #upload-progress{display:flex;flex-wrap:wrap;gap:6px;}
-    .actions{display:flex;flex-direction:column;gap:8px;}
+    .wrap { position:relative;z-index:1;width:100%;max-width:560px;padding:24px;margin:auto;display:flex;flex-direction:column;gap:20px;min-height:100vh;justify-content:center; }
+    #upload-status { font-size:0.85rem;color:var(--text2);text-align:center;min-height:20px; }
+    .players-card { padding:20px; }
+    #upload-progress { display:flex;flex-wrap:wrap;gap:8px;margin-top:10px; }
+    .actions { display:flex;flex-direction:column;gap:8px;margin-top:12px; }
   </style>
 </head>
 <body>
 <canvas id="bg-canvas"></canvas>
 <div class="wrap">
-  <div>
-    <div class="live-badge" style="margin-bottom:16px;"><span class="dot"></span>Upload Phase</div>
-    <h2 class="title-xl" style="font-size:clamp(2.5rem,6vw,4rem);">Dein<br>Battle-Bild</h2>
+  <div class="fade-in">
+    <div class="badge" style="margin-bottom:14px;"><span class="dot"></span>Upload Phase</div>
+    <h1 class="title-lg">Dein<br>Battle-Bild</h1>
   </div>
 
-  <div class="glass-card" style="padding:24px;display:flex;flex-direction:column;gap:16px;">
+  <div class="glass-card fade-in" style="padding:28px;animation-delay:0.1s;display:flex;flex-direction:column;gap:18px;">
     <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
       <input type="file" id="file-input" accept="image/*" style="display:none" onchange="handleFile(this.files[0])">
-      <div style="font-size:2rem;margin-bottom:8px;">🖼️</div>
-      <div style="font-weight:600;color:var(--text);font-size:0.95rem;margin-bottom:4px;">Foto auswählen</div>
-      <div class="sub" style="font-size:0.8rem;">JPG, PNG, GIF — max. 10 MB</div>
-      <img id="preview-img" src="" alt="" style="display:none;max-width:100%;max-height:200px;object-fit:contain;border-radius:8px;margin-top:12px;">
+      <div style="font-size:2.2rem;margin-bottom:10px;">🖼️</div>
+      <div style="font-weight:600;color:var(--text);margin-bottom:4px;">Foto auswählen</div>
+      <div class="sub" style="font-size:0.82rem;">JPG, PNG, GIF — max. 10 MB</div>
+      <img id="preview-img" src="" alt="" style="display:none;max-width:100%;max-height:200px;object-fit:contain;border-radius:10px;margin-top:14px;">
     </div>
 
-    <div>
-      <label class="input-label">Beschreibung (optional)</label>
+    <div class="input-group">
+      <label class="label">Beschreibung (optional)</label>
       <input class="input" id="img-desc" type="text" placeholder="z.B. Ich beim Surfen…" maxlength="60" autocomplete="off">
     </div>
 
@@ -41,12 +40,12 @@
     <button class="btn btn-primary btn-full" onclick="submitUpload()" id="btn-submit">Fertig →</button>
   </div>
 
-  <div class="players-box" id="players-status" style="display:none;">
-    <span class="section-label">Spieler-Status</span>
+  <div class="glass-card players-card fade-in" id="players-status" style="display:none;animation-delay:0.15s;">
+    <div class="label">Spieler-Status</div>
     <div id="upload-progress"></div>
-    <div class="actions" style="margin-top:14px;">
-      <button class="btn btn-primary btn-full" id="btn-start-battle" style="display:none;" onclick="startBattle()">Battle starten →</button>
-      <button class="btn btn-ghost btn-full" id="btn-force-start" style="display:none;font-size:0.82rem;" onclick="startBattle()">Trotzdem starten</button>
+    <div class="actions">
+      <button class="btn btn-primary btn-full" id="btn-start-battle" style="display:none;" onclick="startBattle()">⚔️ Battle starten →</button>
+      <button class="btn btn-ghost btn-full" id="btn-force-start" style="display:none;font-size:0.85rem;" onclick="startBattle()">Trotzdem starten</button>
     </div>
   </div>
 </div>
@@ -54,15 +53,15 @@
 <script src="/socket.io/socket.io.js"></script>
 <script src="shared.js"></script>
 <script>
-  initStarfield();
-  const role=Session.get('role'),code=Session.get('code'),name=Session.get('name');
-  if(!code)window.location.href='/';
+  initStarfield(); initThemeToggle();
+  const role=Session.get('role'), code=Session.get('code'), name=Session.get('name');
+  if(!code) window.location.href='/';
   const socket=io();
-  socket.on('connect',()=>{if(role==='host')socket.emit('host_rejoin',{code,hostName:name});else socket.emit('join_room',{code,playerName:name});});
-  const dropZone=document.getElementById('drop-zone');
-  dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('drag-over');});
-  dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('drag-over'));
-  dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))handleFile(f);});
+  socket.on('connect',()=>{ if(role==='host') socket.emit('host_rejoin',{code,hostName:name}); else socket.emit('join_room',{code,playerName:name}); });
+  const dz=document.getElementById('drop-zone');
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over');});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
+  dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))handleFile(f);});
   let selectedFile=null;
   function handleFile(file){if(!file)return;selectedFile=file;const r=new FileReader();r.onload=e=>{const img=document.getElementById('preview-img');img.src=e.target.result;img.style.display='block';};r.readAsDataURL(file);document.getElementById('upload-status').textContent=file.name+' ausgewählt';}
   async function submitUpload(){
@@ -73,7 +72,7 @@
     try{
       const res=await fetch('/upload',{method:'POST',body:fd});const data=await res.json();
       if(data.error)throw new Error(data.error);
-      document.getElementById('upload-status').textContent='✓ Hochgeladen';btn.textContent='✓ Fertig';
+      document.getElementById('upload-status').textContent='✓ Erfolgreich hochgeladen';btn.textContent='✓ Fertig';
       document.getElementById('players-status').style.display='block';
       if(role==='host')document.getElementById('btn-force-start').style.display='flex';
       socket.emit('player_upload',{code,imagePath:data.path,imageDesc:desc,playerName:name});
@@ -85,7 +84,7 @@
   });
   socket.on('all_uploaded',()=>{if(role==='host'){document.getElementById('players-status').style.display='block';document.getElementById('btn-start-battle').style.display='flex';document.getElementById('btn-force-start').style.display='none';showToast('✓ Alle haben hochgeladen');}});
   function startBattle(){if(role!=='host')return;socket.emit('start_battle',{code});}
-  socket.on('new_pair',()=>{window.location.href='/battle.html';});
+  socket.on('new_pair',()=>window.location.href='/battle.html');
   socket.on('error',msg=>showToast('❌ '+msg));
 </script>
 </body>
