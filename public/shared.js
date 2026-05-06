@@ -16,7 +16,9 @@ function initStarfield() {
   let t=0;
   function draw() {
     ctx.clearRect(0,0,W,H);
-    ctx.fillStyle='#050507'; ctx.fillRect(0,0,W,H);
+   const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+   ctx.fillStyle = isDark ? '#050507' : '#f0f0f0';
+   ctx.fillRect(0,0,W,H);
     orbs.forEach(o=>{
       const g=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,o.r);
       g.addColorStop(0,o.color); g.addColorStop(1,'transparent');
