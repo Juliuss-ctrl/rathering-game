@@ -94,11 +94,6 @@ io.on('connection', socket => {
     const room = result.room;
     socket.join(room.code);
     socket.emit('joined_room', { code: room.code, playerName });
-    // Alte socket.id aus votedThisRound entfernen falls vorhanden
-    const oldPlayer = result.player;
-    if (oldPlayer && oldPlayer._oldSocketId) {
-      room.votedThisRound.delete(oldPlayer._oldSocketId);
-    }
 
     // Spieler auf richtige Seite schicken je nach State
     if (room.state === 'battle') {
@@ -150,7 +145,7 @@ io.on('connection', socket => {
     // Alle Spieler zur Battle-Seite schicken
     io.to(code).emit('phase_battle');
     // Kleiner Delay damit alle Zeit haben zu laden
-    setTimeout(() => sendCurrentPair(room), 1500);
+    setTimeout(() => sendCurrentPair(room), 800);
   });
 
   socket.on('request_current_pair', ({ code }) => {
@@ -170,7 +165,7 @@ io.on('connection', socket => {
     if (!room || room.state !== 'battle') return;
     const ok = castVote(room, socket.id, winnerName);
     if (!ok) return;
-    io.to(code).emit('vote_update', { votedCount: room.votedThisRound.size, total: room.players.length });
+    io.to(code).emit('vote_update', { votedCount: room.votedThisRound.size, total: room.voterCount });
     if (allVoted(room)) {
       const hasMore = nextPair(room);
       if (hasMore) {

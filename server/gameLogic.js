@@ -10,15 +10,13 @@ function generateCode() {
 function createRoom(hostSocketId, hostName, forceCode) {
   const code = forceCode || generateCode();
   const room = {
-    code,
-    host: hostSocketId,
-    hostName,
+    code, host: hostSocketId, hostName,
     players: [],
     state: 'lobby',
-    pairs: [],
-    currentPair: 0,
-    votes: {},
-    votedThisRound: new Set(),
+    pairs: [], currentPair: 0,
+    votes: {}, votedThisRound: new Set(),
+    // Snapshot der Spieler beim Battle-Start
+    battlePlayers: [],
   };
   rooms.set(code, room);
   return room;
@@ -28,7 +26,7 @@ function joinRoom(code, playerName, socketId) {
   const room = rooms.get(code.toUpperCase());
   if (!room) return { error: 'Room nicht gefunden' };
 
-  // Spieler bereits drin? → socket.id updaten (Reconnect)
+  // Spieler bereits drin? → nur socket.id updaten, sonst nichts
   const existing = room.players.find(p => p.name === playerName);
   if (existing) {
     existing._oldSocketId = existing.socketId;
@@ -44,20 +42,16 @@ function joinRoom(code, playerName, socketId) {
     return { room, player };
   }
 
-  // Spiel läuft aber Spieler ist nicht dabei → trotzdem als Zuschauer joinen
-  // damit er phase_battle bekommt
-  const player = { id: socketId, name: playerName, imagePath: null, imageDesc: '', socketId };
-  room.players.push(player);
-  return { room, player };
+  // Spiel läuft und Spieler ist nicht dabei → NICHT hinzufügen
+  // Nur socket joinen damit er Events bekommt
+  return { room, player: null, spectator: true };
 }
 
 function setPlayerImage(code, socketId, imagePath, imageDesc) {
   const room = rooms.get(code);
   if (!room) return null;
-  // Spieler suchen — auch nach Host-socket
   let player = room.players.find(p => p.socketId === socketId);
   if (!player) {
-    // Host lädt auch Bild hoch → als Spieler hinzufügen
     player = { id: socketId, name: room.hostName, imagePath: null, imageDesc: '', socketId };
     room.players.push(player);
   }
@@ -71,7 +65,11 @@ function allUploaded(room) {
 }
 
 function buildPairs(room) {
-  const imgs = room.players.map(p => ({ name: p.name, path: p.imagePath, desc: p.imageDesc }));
+  // Snapshot der aktiven Spieler beim Battle-Start speichern
+  const imgs = room.players
+    .filter(p => p.imagePath)
+    .map(p => ({ name: p.name, path: p.imagePath, desc: p.imageDesc }));
+
   for (let i = imgs.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [imgs[i], imgs[j]] = [imgs[j], imgs[i]];
@@ -79,25 +77,29 @@ function buildPairs(room) {
   const pairs = [];
   for (let i = 0; i + 1 < imgs.length; i += 2) pairs.push([imgs[i], imgs[i + 1]]);
   if (imgs.length % 2 === 1) pairs.push([imgs[imgs.length - 1], null]);
+
   room.pairs = pairs;
   room.currentPair = 0;
   room.votes = {};
   room.votedThisRound = new Set();
+  // Anzahl der Wähler = Anzahl Spieler mit Bild (eingefroren beim Start)
+  room.voterCount = imgs.length;
   imgs.forEach(img => { room.votes[img.name] = 0; });
+
+  console.log(`Battle started with ${room.voterCount} voters`);
 }
 
 function castVote(room, socketId, winnerName) {
-  // Prüfen ob dieser Socket schon abgestimmt hat
   if (room.votedThisRound.has(socketId)) return false;
   room.votedThisRound.add(socketId);
   if (room.votes[winnerName] !== undefined) room.votes[winnerName]++;
-  console.log(`Vote: ${winnerName} | Voted: ${room.votedThisRound.size} / ${room.players.length}`);
+  console.log(`Vote: ${winnerName} | ${room.votedThisRound.size} / ${room.voterCount}`);
   return true;
 }
 
 function allVoted(room) {
-  // Alle Spieler müssen abgestimmt haben
-  return room.votedThisRound.size >= room.players.length;
+  // Vergleiche mit eingefrorenem voterCount vom Battle-Start
+  return room.votedThisRound.size >= room.voterCount;
 }
 
 function nextPair(room) {
