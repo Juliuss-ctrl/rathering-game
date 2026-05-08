@@ -30,6 +30,7 @@ function joinRoom(code, playerName, socketId) {
 
   const existing = room.players.find(p => p.name === playerName);
   if (existing) {
+    existing._oldSocketId = existing.socketId;
     existing.socketId = socketId;
     existing.id = socketId;
     return { room, player: existing };
@@ -78,16 +79,17 @@ function buildPairs(room) {
 }
 
 function castVote(room, socketId, winnerName) {
+  // Prüfen ob dieser Socket schon abgestimmt hat
   if (room.votedThisRound.has(socketId)) return false;
   room.votedThisRound.add(socketId);
   if (room.votes[winnerName] !== undefined) room.votes[winnerName]++;
+  console.log(`Vote: ${winnerName} | Voted: ${room.votedThisRound.size} / ${room.players.length}`);
   return true;
 }
 
 function allVoted(room) {
-  // Alle Spieler müssen abgestimmt haben (Host zählt auch als Spieler)
-  const total = room.players.length;
-  return room.votedThisRound.size >= total;
+  // Alle Spieler müssen abgestimmt haben
+  return room.votedThisRound.size >= room.players.length;
 }
 
 function nextPair(room) {
