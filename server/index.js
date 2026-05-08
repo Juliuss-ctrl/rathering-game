@@ -99,7 +99,7 @@ io.on('connection', socket => {
     if (oldPlayer && oldPlayer._oldSocketId) {
       room.votedThisRound.delete(oldPlayer._oldSocketId);
     }
-    
+
     // Spieler auf richtige Seite schicken je nach State
     if (room.state === 'battle') {
       socket.emit('phase_battle');
@@ -150,7 +150,7 @@ io.on('connection', socket => {
     // Alle Spieler zur Battle-Seite schicken
     io.to(code).emit('phase_battle');
     // Kleiner Delay damit alle Zeit haben zu laden
-    setTimeout(() => sendCurrentPair(room), 800);
+    setTimeout(() => sendCurrentPair(room), 1500);
   });
 
   socket.on('request_current_pair', ({ code }) => {
