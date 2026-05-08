@@ -84,7 +84,8 @@
   });
   socket.on('all_uploaded',()=>{if(role==='host'){document.getElementById('players-status').style.display='block';document.getElementById('btn-start-battle').style.display='flex';document.getElementById('btn-force-start').style.display='none';showToast('✓ Alle haben hochgeladen');}});
   function startBattle(){if(role!=='host')return;socket.emit('start_battle',{code});}
-  socket.on('new_pair',()=>window.location.href='/battle.html');
+  socket.on('new_pair', () => window.location.href='/battle.html');
+  socket.on('phase_battle', () => window.location.href='/battle.html');
   socket.on('error',msg=>showToast('❌ '+msg));
 </script>
 </body>

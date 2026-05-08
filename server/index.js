@@ -133,7 +133,8 @@ io.on('connection', socket => {
     if (!room) { socket.emit('error', 'Room nicht gefunden'); return; }
     buildPairs(room);
     room.state = 'battle';
-    sendCurrentPair(room);
+    io.to(code).emit('phase_battle');
+    setTimeout(() => sendCurrentPair(room), 500);
   });
 
   socket.on('request_current_pair', ({ code }) => {
