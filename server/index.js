@@ -73,14 +73,11 @@ io.on('connection', socket => {
       room.host = socket.id;
       socket.join(code);
       socket.emit('host_rejoined', { code });
+      // Wenn Battle läuft → Seite weiterleiten
       if (room.state === 'battle' && room.pairs.length > 0) {
-        const pair = room.pairs[room.currentPair];
-        socket.emit('new_pair', {
-          pairIndex: room.currentPair,
-          totalPairs: room.pairs.length,
-          left:  pair[0],
-          right: pair[1],
-        });
+        socket.emit('phase_battle');
+      } else if (room.state === 'upload') {
+        socket.emit('phase_upload');
       } else {
         io.to(code).emit('lobby_update', {
           players: room.players.map(p => ({ name: p.name, hasImage: !!p.imagePath })),
@@ -94,12 +91,24 @@ io.on('connection', socket => {
     if (!code || !playerName) return;
     const result = joinRoom(code, playerName, socket.id);
     if (result.error) { socket.emit('error', result.error); return; }
-    socket.join(result.room.code);
-    socket.emit('joined_room', { code: result.room.code, playerName });
-    io.to(result.room.code).emit('lobby_update', {
-      players: result.room.players.map(p => ({ name: p.name, hasImage: !!p.imagePath })),
-      hostName: result.room.hostName
-    });
+    const room = result.room;
+    socket.join(room.code);
+    socket.emit('joined_room', { code: room.code, playerName });
+
+    // Spieler auf richtige Seite schicken je nach State
+    if (room.state === 'battle') {
+      socket.emit('phase_battle');
+    } else if (room.state === 'upload') {
+      socket.emit('phase_upload');
+      io.to(room.code).emit('upload_update', {
+        players: room.players.map(p => ({ name: p.name, hasImage: !!p.imagePath }))
+      });
+    } else {
+      io.to(room.code).emit('lobby_update', {
+        players: room.players.map(p => ({ name: p.name, hasImage: !!p.imagePath })),
+        hostName: room.hostName
+      });
+    }
   });
 
   socket.on('start_upload', ({ code }) => {
@@ -133,13 +142,15 @@ io.on('connection', socket => {
     if (!room) { socket.emit('error', 'Room nicht gefunden'); return; }
     buildPairs(room);
     room.state = 'battle';
+    // Alle Spieler zur Battle-Seite schicken
     io.to(code).emit('phase_battle');
-    setTimeout(() => sendCurrentPair(room), 500);
+    // Kleiner Delay damit alle Zeit haben zu laden
+    setTimeout(() => sendCurrentPair(room), 800);
   });
 
   socket.on('request_current_pair', ({ code }) => {
     const room = rooms.get(code);
-    if (!room || room.state !== 'battle') return;
+    if (!room || room.state !== 'battle' || !room.pairs.length) return;
     const pair = room.pairs[room.currentPair];
     socket.emit('new_pair', {
       pairIndex: room.currentPair,
