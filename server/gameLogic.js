@@ -28,6 +28,7 @@ function joinRoom(code, playerName, socketId) {
   const room = rooms.get(code.toUpperCase());
   if (!room) return { error: 'Room nicht gefunden' };
 
+  // Spieler bereits drin? → socket.id updaten (Reconnect)
   const existing = room.players.find(p => p.name === playerName);
   if (existing) {
     existing._oldSocketId = existing.socketId;
@@ -36,8 +37,15 @@ function joinRoom(code, playerName, socketId) {
     return { room, player: existing };
   }
 
-  if (room.state !== 'lobby') return { error: 'Spiel läuft bereits' };
+  // Neuer Spieler — nur in Lobby erlaubt
+  if (room.state === 'lobby') {
+    const player = { id: socketId, name: playerName, imagePath: null, imageDesc: '', socketId };
+    room.players.push(player);
+    return { room, player };
+  }
 
+  // Spiel läuft aber Spieler ist nicht dabei → trotzdem als Zuschauer joinen
+  // damit er phase_battle bekommt
   const player = { id: socketId, name: playerName, imagePath: null, imageDesc: '', socketId };
   room.players.push(player);
   return { room, player };
