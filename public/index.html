@@ -16,15 +16,15 @@
     .footer-text { font-size:0.7rem; color:var(--text3); letter-spacing:0.08em; text-transform:uppercase; }
     .code-input { text-align:center; letter-spacing:0.16em; font-weight:600; font-size:1.05rem; text-transform:uppercase; }
     #about-overlay { display:none; position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,0.75); backdrop-filter:blur(10px); align-items:center; justify-content:center; padding:20px; }
-    #about-box { background:var(--surface); border:1px solid var(--border2); border-radius:var(--r2); padding:40px; max-width:580px; width:100%; max-height:88vh; overflow-y:auto; position:relative; box-shadow:0 40px 80px rgba(0,0,0,0.6); animation:modal-in 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+    #about-box { background:var(--surface); border:1px solid var(--border2); border-radius:var(--r2); padding:48px; max-width:780px; width:100%; max-height:92vh; overflow-y:auto; position:relative; box-shadow:0 40px 80px rgba(0,0,0,0.6); animation:modal-in 0.3s cubic-bezier(0.34,1.56,0.64,1); }
     @keyframes modal-in { from{opacity:0;transform:scale(0.92) translateY(20px);} to{opacity:1;transform:none;} }
-    .member-card { display:flex; align-items:center; gap:16px; background:var(--surface2); border:1px solid var(--border); border-radius:var(--r); padding:18px; margin-bottom:12px; }
+    .member-card { display:flex; align-items:center; gap:20px; background:var(--surface2); border:1px solid var(--border); border-radius:var(--r); padding:24px; margin-bottom:14px; }
     .member-card:last-child { margin-bottom:0; }
-    .member-avatar { width:64px; height:64px; border-radius:50%; background:var(--bg2); border:2px solid var(--border2); display:flex; align-items:center; justify-content:center; font-size:1.8rem; flex-shrink:0; overflow:hidden; }
+    .member-avatar { width:84px; height:84px; border-radius:50%; background:var(--bg2); border:2px solid var(--border2); display:flex; align-items:center; justify-content:center; font-size:2rem; flex-shrink:0; overflow:hidden; }
     .member-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
-    .member-role { font-size:0.68rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--accent); margin:3px 0 5px; }
-    .member-name { font-weight:600; color:var(--text); font-size:1rem; }
-    .member-desc { font-size:0.84rem; color:var(--text2); line-height:1.4; }
+    .member-role { font-size:0.68rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--accent); margin:4px 0 6px; }
+    .member-name { font-weight:600; color:var(--text); font-size:1.05rem; }
+    .member-desc { font-size:0.88rem; color:var(--text2); line-height:1.5; }
     .member-card.sick { opacity:0.55; }
   </style>
 </head>
@@ -34,34 +34,57 @@
 <div id="about-overlay">
   <div id="about-box">
     <button onclick="closeAbout()" style="position:absolute;top:16px;right:16px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--text2);font-size:1rem;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
-    <div style="margin-bottom:28px;">
+    <div style="margin-bottom:32px;">
       <div class="label" style="margin-bottom:8px;">Das Team</div>
-      <h2 style="font-family:var(--font-head);font-size:2rem;font-weight:700;color:var(--text);letter-spacing:-0.02em;">Wer steckt dahinter?</h2>
-      <p style="color:var(--text2);font-size:0.9rem;margin-top:6px;">Die Köpfe hinter Rathering Game 🎮</p>
+      <h2 style="font-family:var(--font-head);font-size:2.2rem;font-weight:700;color:var(--text);letter-spacing:-0.02em;">Wer steckt dahinter?</h2>
+      <p style="color:var(--text2);font-size:0.95rem;margin-top:8px;">Die Köpfe hinter Rathering Game 🎮</p>
     </div>
+
     <div class="member-card">
       <div class="member-avatar">
-  <img src="https://res.cloudinary.com/duactbgmc/image/upload/v1778652283/boss_dfidba.jpg" alt="Michi">
-       </div>
-      <div><div class="member-name">Michi</div><div class="member-role">Der Boss &amp; Developer</div><div class="member-desc">Schreibt den Code und hat das Sagen. Ohne ihn läuft gar nichts.</div></div>
-    </div>
-    <div class="member-card">
-      <div class="member-avatar">
-  <img src="https://res.cloudinary.com/duactbgmc/image/upload/v1778480925/rathering-game/k8xaccxqygkjia8reu65.jpg" alt="Elias">
+        <img src="https://res.cloudinary.com/duactbgmc/image/upload/w_200,h_200,c_fill,q_auto,f_auto/v1778652283/boss_dfidba.jpg" alt="Michi">
       </div>
-      <div><div class="member-name">Elias Gagelmann</div><div class="member-role">Designer</div><div class="member-desc">Macht alles schön. Zuständig für das visuelle Erlebnis.</div></div>
+      <div>
+        <div class="member-name">Michi</div>
+        <div class="member-role">Der Boss &amp; Developer</div>
+        <div class="member-desc">Schreibt den Code und hat das Sagen. Ohne ihn läuft gar nichts.</div>
+      </div>
     </div>
+
     <div class="member-card">
       <div class="member-avatar">
-  <img src="https://res.cloudinary.com/duactbgmc/image/upload/v1778480973/rathering-game/r9wm0sd6yarbdijwj2qm.png" alt="Fabian">
+        <img src="https://res.cloudinary.com/duactbgmc/image/upload/w_200,h_200,c_fill,q_auto,f_auto/v1778480925/rathering-game/k8xaccxqygkjia8reu65.jpg" alt="Elias">
       </div>
-      <div><div class="member-name">Fabian Deninger</div><div class="member-role">Marketing</div><div class="member-desc">Sorgt dafür dass alle von Rathering wissen. Der Mann fürs Publikum.</div></div>
+      <div>
+        <div class="member-name">Elias Gagelmann</div>
+        <div class="member-role">Designer</div>
+        <div class="member-desc">Macht alles schön. Zuständig für das visuelle Erlebnis.</div>
+      </div>
     </div>
+
+    <div class="member-card">
+      <div class="member-avatar">
+        <img src="https://res.cloudinary.com/duactbgmc/image/upload/w_200,h_200,c_fill,q_auto,f_auto/v1778480973/rathering-game/r9wm0sd6yarbdijwj2qm.png" alt="Fabian">
+      </div>
+      <div>
+        <div class="member-name">Fabian Deninger</div>
+        <div class="member-role">Marketing</div>
+        <div class="member-desc">Sorgt dafür dass alle von Rathering wissen. Der Mann fürs Publikum.</div>
+      </div>
+    </div>
+
     <div class="member-card sick">
-      <div class="member-avatar"><img src="https://res.cloudinary.com/duactbgmc/image/upload/v1778652526/schwab_csmopz.jpg" alt="Clemens"></div>
-      <div><div class="member-name">Clemens Schwab</div><div class="member-role">Krank zuhause</div><div class="member-desc">Wäre dabei gewesen, liegt aber flach. Gute Besserung Clemens! 🙏</div></div>
+      <div class="member-avatar">
+        <img src="https://res.cloudinary.com/duactbgmc/image/upload/w_200,h_200,c_fill,q_auto,f_auto/v1778652526/schwab_csmopz.jpg" alt="Clemens">
+      </div>
+      <div>
+        <div class="member-name">Clemens Schwab</div>
+        <div class="member-role">Krank zuhause</div>
+        <div class="member-desc">Wäre dabei gewesen, liegt aber flach. Gute Besserung Clemens! 🙏</div>
+      </div>
     </div>
-    <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);text-align:center;font-size:0.76rem;color:var(--text3);">Made with ❤️ &nbsp;·&nbsp; GIG — Gewinnen ist Geil</div>
+
+    <div style="margin-top:28px;padding-top:20px;border-top:1px solid var(--border);text-align:center;font-size:0.76rem;color:var(--text3);">Made with ❤️ &nbsp;·&nbsp; GIG — Gewinnen ist Geil</div>
   </div>
 </div>
 
