@@ -95,6 +95,12 @@ io.on('connection', socket => {
     socket.join(room.code);
     socket.emit('joined_room', { code: room.code, playerName });
 
+    // Alte socket.id aus votedThisRound entfernen
+    const oldPlayer = result.player;
+    if (oldPlayer && oldPlayer._oldSocketId) {
+      room.votedThisRound.delete(oldPlayer._oldSocketId);
+    }
+
     // Spieler auf richtige Seite schicken je nach State
     if (room.state === 'battle') {
       socket.emit('phase_battle');
