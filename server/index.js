@@ -145,7 +145,7 @@ io.on('connection', socket => {
     // Alle Spieler zur Battle-Seite schicken
     io.to(code).emit('phase_battle');
     // Kleiner Delay damit alle Zeit haben zu laden
-    setTimeout(() => sendCurrentPair(room), 800);
+    setTimeout(() => sendCurrentPair(room), 2500);
   });
 
   socket.on('request_current_pair', ({ code }) => {

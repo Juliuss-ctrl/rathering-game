@@ -62,7 +62,7 @@
   socket.on('connect',()=>{
     if(role==='host') socket.emit('host_rejoin',{code,hostName:name});
     else socket.emit('join_room',{code,playerName:name});
-    setTimeout(()=>socket.emit('request_current_pair',{code}),800);
+    setTimeout(()=>socket.emit('request_current_pair',{code}),1500);
   });
   let hasVoted=false, currentLeft=null, currentRight=null;
   socket.on('new_pair',({pairIndex,totalPairs,left,right})=>{
