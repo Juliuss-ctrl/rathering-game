@@ -183,6 +183,16 @@ io.on('connection', socket => {
     }
   });
 
+  socket.on('check_state', ({ code }) => {
+  const room = rooms.get(code);
+  if (!room) return;
+  if (room.state === 'battle') {
+    socket.emit('phase_battle');
+  } else if (room.state === 'results') {
+    socket.emit('show_results', { results: getResults(room) });
+  }
+});
+
   socket.on('disconnect', () => {
     const room = getRoomBySocket(socket.id);
     if (room) {
