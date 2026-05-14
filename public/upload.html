@@ -61,9 +61,19 @@
   socket.on('connect',()=>{
     if(role==='host') socket.emit('host_rejoin',{code,hostName:name});
     else socket.emit('join_room',{code,playerName:name});
-    // Nach Connect prüfen ob Battle schon läuft
     setTimeout(()=>socket.emit('check_state',{code}),500);
   });
+
+  // Alle 2 Sekunden prüfen ob Battle schon läuft
+  const stateInterval = setInterval(()=>{
+    if(socket.connected) socket.emit('check_state',{code});
+  }, 2000);
+
+  // Interval stoppen wenn Battle startet
+  function goToBattle() {
+    clearInterval(stateInterval);
+    window.location.href='/battle.html';
+  }
 
   const dz=document.getElementById('drop-zone');
   dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over');});
@@ -120,8 +130,8 @@
   function startBattle(){if(role!=='host')return;socket.emit('start_battle',{code});}
 
   // Alle Wege zum Battle abfangen
-  socket.on('phase_battle', ()=>window.location.href='/battle.html');
-  socket.on('new_pair',     ()=>window.location.href='/battle.html');
+  socket.on('phase_battle', goToBattle);
+  socket.on('new_pair',     goToBattle);
 
   socket.on('error',msg=>showToast('❌ '+msg));
 </script>
