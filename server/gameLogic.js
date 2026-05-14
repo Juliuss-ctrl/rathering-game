@@ -76,7 +76,13 @@ function buildPairs(room) {
   }
   const pairs = [];
   for (let i = 0; i + 1 < imgs.length; i += 2) pairs.push([imgs[i], imgs[i + 1]]);
-  if (imgs.length % 2 === 1) pairs.push([imgs[imgs.length - 1], null]);
+  if (imgs.length % 2 === 1) {
+  // Random Gegner aus den anderen Bildern wählen
+  const last = imgs[imgs.length - 1];
+  const others = imgs.slice(0, -1);
+  const random = others[Math.floor(Math.random() * others.length)];
+  pairs.push([last, { ...random, name: random.name + ' ⭐' }]);
+}
 
   room.pairs = pairs;
   room.currentPair = 0;
