@@ -6,19 +6,57 @@
   <title>Battle – Rathering Game</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    body{overflow:hidden;}
-    .battle-page{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh;}
-    .battle-header{padding:20px 44px 12px;display:flex;flex-direction:column;gap:8px;flex-shrink:0;}
-    .battle-meta{display:flex;justify-content:space-between;align-items:center;}
-    .battle-q{text-align:center;font-family:var(--font-head);font-size:clamp(1.3rem,2.5vw,2rem);font-weight:700;letter-spacing:-0.01em;color:var(--text);padding-top:6px;}
-    .arena{flex:1;display:flex;align-items:center;justify-content:center;padding:10px 36px;gap:20px;}
-    .battle-card{flex:1;max-width:500px;min-height:0;}
-    .battle-card img{max-width:100%;max-height:calc(100vh-270px);object-fit:contain;border-radius:10px;}
-    .no-image{width:100%;height:200px;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:0.88rem;border:1.5px dashed var(--border2);border-radius:10px;}
-    .battle-footer{padding:8px 44px 22px;text-align:center;flex-shrink:0;}
-    #vote-status{font-size:0.85rem;color:var(--text2);margin-bottom:6px;min-height:20px;}
-    .hint{font-size:0.68rem;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;}
-    @media(max-width:700px){.arena{flex-direction:column;padding:8px 16px;gap:12px;}.battle-card{max-width:100%;}.battle-header,.battle-footer{padding-left:20px;padding-right:20px;}}
+ body{overflow:hidden;}
+.battle-page{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh;}
+.battle-header{padding:20px 44px 12px;display:flex;flex-direction:column;gap:8px;flex-shrink:0;}
+.battle-meta{display:flex;justify-content:space-between;align-items:center;}
+.battle-q{text-align:center;font-family:var(--font-head);font-size:clamp(1.3rem,2.5vw,2rem);font-weight:700;letter-spacing:-0.01em;color:var(--text);padding-top:6px;}
+.arena{flex:1;display:flex;align-items:center;justify-content:center;padding:10px 36px;gap:20px;min-height:0;}
+.battle-card{flex:1;max-width:500px;min-height:0;max-height:100%;}
+.battle-card img{max-width:100%;max-height:calc(100vh-280px);object-fit:contain;border-radius:10px;}
+.card-name{font-family:var(--font-head);font-size:1.1rem;font-weight:600;color:var(--text);text-align:center;margin-top:10px;letter-spacing:-0.01em;}
+.card-desc{font-size:0.8rem;color:var(--text3);text-align:center;margin-top:3px;}
+.no-image{width:100%;height:200px;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:0.88rem;border:1.5px dashed var(--border2);border-radius:10px;}
+.battle-footer{padding:8px 44px 22px;text-align:center;flex-shrink:0;}
+#vote-status{font-size:0.85rem;color:var(--text2);margin-bottom:6px;min-height:20px;}
+.hint{font-size:0.68rem;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;}
+.voted-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.04);border-radius:var(--r2);pointer-events:none;opacity:0;transition:opacity 0.2s;font-size:3rem;}
+.battle-card.voted .voted-overlay{opacity:1;}
+
+/* ── Mobile ── */
+@media(max-width:700px){
+  body{overflow:hidden;}
+  .battle-header{padding:12px 16px 8px;}
+  .battle-q{font-size:1rem;padding-top:4px;}
+  .arena{
+    flex-direction:row;
+    padding:6px 10px;
+    gap:8px;
+    align-items:stretch;
+  }
+  .battle-card{
+    flex:1;
+    max-width:none;
+    min-width:0;
+  }
+  .battle-card > div {
+    padding:12px !important;
+  }
+  .battle-card img{
+    max-height:calc(50vh - 120px);
+    width:100%;
+    object-fit:cover;
+    border-radius:8px;
+  }
+  .card-name{font-size:0.85rem;margin-top:6px;}
+  .card-desc{font-size:0.7rem;}
+  .vs-badge{
+    width:36px;height:36px;font-size:0.65rem;
+    flex-shrink:0;align-self:center;
+  }
+  .battle-footer{padding:6px 16px 12px;}
+  #vote-status{font-size:0.78rem;}
+}
   </style>
 </head>
 <body>
