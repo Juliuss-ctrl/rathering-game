@@ -139,6 +139,14 @@
 <script>
   initStarfield();
   initThemeToggle();
+  // QR Code Scan → Code vorausfüllen
+const urlParams = new URLSearchParams(window.location.search);
+const joinCode = urlParams.get('join');
+if (joinCode) {
+  switchTab('join');
+  document.getElementById('join-code').value = joinCode;
+  document.getElementById('join-name').focus();
+}
   const socket = io();
 
   function switchTab(tab) {

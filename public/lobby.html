@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lobby – Rathering Game</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <style>
     .wrap { position:relative;z-index:1;width:100%;max-width:580px;padding:24px;margin:auto;display:flex;flex-direction:column;gap:20px;min-height:100vh;justify-content:center; }
     .code-box { background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r2);padding:32px;text-align:center; }
@@ -15,6 +16,9 @@
     .actions { display:flex;flex-direction:column;gap:10px; }
     #btn-start { display:none; }
     .waiting { text-align:center;font-size:0.85rem;color:var(--text3);padding:12px 0; }
+    #qr-canvas { border-radius:10px; display:none; }
+    .qr-wrap { margin-top:16px; display:flex; flex-direction:column; align-items:center; gap:6px; }
+    .qr-label { font-size:0.65rem; color:var(--text3); letter-spacing:0.1em; text-transform:uppercase; }
   </style>
 </head>
 <body>
@@ -29,6 +33,10 @@
     <div class="label" style="margin-bottom:12px;">Raum-Code</div>
     <div class="room-code" id="room-code" onclick="copyCode()">——</div>
     <div class="code-hint">Klicken zum Kopieren · Code mit Freunden teilen</div>
+    <div class="qr-wrap">
+      <canvas id="qr-canvas"></canvas>
+      <div class="qr-label">QR Code scannen zum Beitreten</div>
+    </div>
   </div>
 
   <div class="glass-card players-card fade-in" style="animation-delay:0.15s;">
@@ -52,9 +60,26 @@
   if(!code||!role||!name) window.location.href='/';
   document.getElementById('room-code').textContent = code;
   if(role==='host') { document.getElementById('btn-start').style.display='flex'; document.getElementById('waiting-msg').style.display='none'; }
+
+  function generateQR(c) {
+    const url = `${window.location.origin}/?join=${c}`;
+    const canvas = document.getElementById('qr-canvas');
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    QRCode.toCanvas(canvas, url, {
+      width: 160, margin: 2,
+      color: { dark: isLight ? '#000000' : '#ffffff', light: isLight ? '#ffffff' : '#18181f' }
+    }, () => { canvas.style.display = 'block'; });
+  }
+
+  setTimeout(() => generateQR(code), 400);
+
   const socket = io();
   socket.on('connect', () => { if(role==='host') socket.emit('host_rejoin',{code,hostName:name}); else socket.emit('join_room',{code,playerName:name}); });
-  socket.on('host_rejoined', ({code:c}) => { code=c; Session.set('code',c); document.getElementById('room-code').textContent=c; });
+  socket.on('host_rejoined', ({code:c}) => {
+    code=c; Session.set('code',c);
+    document.getElementById('room-code').textContent=c;
+    generateQR(c);
+  });
   socket.on('lobby_update', ({players, hostName}) => {
     const list = document.getElementById('player-list'); list.innerHTML='';
     const hb = document.createElement('div'); hb.className='host-badge'; hb.innerHTML=`👑 ${hostName}`; list.appendChild(hb);
