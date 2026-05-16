@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lobby – Rathering Game</title>
   <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <style>
     .wrap { position:relative;z-index:1;width:100%;max-width:580px;padding:24px;margin:auto;display:flex;flex-direction:column;gap:20px;min-height:100vh;justify-content:center; }
     .code-box { background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r2);padding:32px;text-align:center; }
@@ -16,9 +15,9 @@
     .actions { display:flex;flex-direction:column;gap:10px; }
     #btn-start { display:none; }
     .waiting { text-align:center;font-size:0.85rem;color:var(--text3);padding:12px 0; }
-    #qr-canvas { border-radius:10px; display:none; }
     .qr-wrap { margin-top:16px; display:flex; flex-direction:column; align-items:center; gap:6px; }
     .qr-label { font-size:0.65rem; color:var(--text3); letter-spacing:0.1em; text-transform:uppercase; }
+    #qr-img { border-radius:10px; display:none; width:160px; height:160px; }
   </style>
 </head>
 <body>
@@ -34,7 +33,7 @@
     <div class="room-code" id="room-code" onclick="copyCode()">——</div>
     <div class="code-hint">Klicken zum Kopieren · Code mit Freunden teilen</div>
     <div class="qr-wrap">
-      <canvas id="qr-canvas"></canvas>
+      <img id="qr-img" alt="QR Code">
       <div class="qr-label">QR Code scannen zum Beitreten</div>
     </div>
   </div>
@@ -62,13 +61,13 @@
   if(role==='host') { document.getElementById('btn-start').style.display='flex'; document.getElementById('waiting-msg').style.display='none'; }
 
   function generateQR(c) {
-    const url = `${window.location.origin}/?join=${c}`;
-    const canvas = document.getElementById('qr-canvas');
+    const url = encodeURIComponent(`${window.location.origin}/?join=${c}`);
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-    QRCode.toCanvas(canvas, url, {
-      width: 160, margin: 2,
-      color: { dark: isLight ? '#000000' : '#ffffff', light: isLight ? '#ffffff' : '#18181f' }
-    }, () => { canvas.style.display = 'block'; });
+    const bg = isLight ? 'ffffff' : '18181f';
+    const fg = isLight ? '000000' : 'ffffff';
+    const img = document.getElementById('qr-img');
+    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${url}&bgcolor=${bg}&color=${fg}&qzone=1`;
+    img.style.display = 'block';
   }
 
   setTimeout(() => generateQR(code), 400);
