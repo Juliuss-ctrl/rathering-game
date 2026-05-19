@@ -6,9 +6,24 @@
   <title>Ergebnis – Rathering Game</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    .results-page{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:56px 20px 48px;}
-    .results-header{text-align:center;margin-bottom:48px;}
-    .rest-list{width:100%;max-width:600px;display:flex;flex-direction:column;gap:8px;margin-bottom:36px;}
+    .results-page{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:44px 20px 48px;}
+    .results-header{text-align:center;margin-bottom:28px;}
+    .winner-spotlight{width:100%;max-width:940px;display:grid;grid-template-columns:minmax(220px,360px) 1fr;gap:24px;align-items:stretch;border:1px solid rgba(245,158,11,0.28);border-radius:28px;background:linear-gradient(145deg,rgba(245,158,11,0.16),rgba(24,24,31,0.96) 42%,rgba(34,34,44,0.92));box-shadow:0 30px 80px rgba(0,0,0,0.42),0 0 70px rgba(245,158,11,0.08);padding:24px;margin-bottom:28px;overflow:hidden;position:relative;}
+    .winner-spotlight::before{content:'';position:absolute;inset:0;border-radius:28px;background:linear-gradient(90deg,rgba(255,255,255,0.08),transparent 38%,rgba(245,158,11,0.08));pointer-events:none;}
+    .winner-media{position:relative;min-height:300px;border-radius:22px;background:var(--bg2);border:1px solid var(--border2);overflow:hidden;display:flex;align-items:center;justify-content:center;}
+    .winner-media img{width:100%;height:100%;object-fit:cover;}
+    .winner-fallback{font-size:5rem;}
+    .winner-ribbon{position:absolute;top:14px;left:14px;display:inline-flex;align-items:center;gap:8px;border-radius:50px;background:rgba(12,12,14,0.72);border:1px solid rgba(255,255,255,0.18);backdrop-filter:blur(12px);padding:8px 12px;font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#fff;}
+    .winner-content{position:relative;display:flex;flex-direction:column;justify-content:space-between;gap:22px;padding:8px 4px;}
+    .winner-label{font-size:0.74rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);}
+    .winner-name{font-family:var(--font-head);font-size:clamp(2.5rem,6vw,5rem);font-weight:700;letter-spacing:-0.03em;line-height:0.9;color:var(--text);margin-top:10px;}
+    .winner-desc{margin-top:12px;color:var(--text2);font-size:1rem;line-height:1.5;max-width:520px;}
+    .winner-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+    .winner-stat{border:1px solid var(--border2);border-radius:16px;background:rgba(255,255,255,0.04);padding:14px;}
+    .winner-stat-value{font-family:var(--font-head);font-size:1.65rem;font-weight:700;color:var(--text);line-height:1;}
+    .winner-stat-label{margin-top:6px;font-size:0.68rem;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;}
+    .section-label{width:100%;max-width:900px;margin:4px 0 12px;color:var(--text3);font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;}
+    .rest-list{width:100%;max-width:720px;display:flex;flex-direction:column;gap:8px;margin-bottom:36px;}
     .result-rank{font-size:0.9rem;font-weight:600;color:var(--text3);min-width:28px;text-align:center;}
     .result-info{flex:1;}
     .result-name{font-weight:500;font-size:0.95rem;color:var(--text);}
@@ -17,7 +32,19 @@
     .result-bar-track{height:3px;border-radius:2px;background:var(--border2);overflow:hidden;}
     .result-bar-fill{height:100%;border-radius:2px;background:var(--text);transition:width 0.8s ease;}
     .result-pct{font-size:0.7rem;color:var(--text3);text-align:right;margin-top:3px;}
+    .rank-points{font-size:0.72rem;font-weight:700;color:var(--gold);border:1px solid rgba(245,158,11,0.26);background:rgba(245,158,11,0.08);border-radius:50px;padding:4px 9px;}
     .actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
+    @media(max-width:760px){
+      .winner-spotlight{grid-template-columns:1fr;padding:16px;border-radius:22px;}
+      .winner-media{min-height:260px;}
+      .winner-stats{grid-template-columns:1fr 1fr 1fr;}
+      .podest-grid{margin-top:0;}
+    }
+    @media(max-width:520px){
+      .results-page{padding:32px 14px 40px;}
+      .winner-name{font-size:2.6rem;}
+      .winner-stats{grid-template-columns:1fr;}
+    }
   </style>
 </head>
 <body>
@@ -28,7 +55,10 @@
     <h1 class="title-xl">Ergebnis</h1>
     <p class="sub" style="margin-top:8px;">Die Abstimmung ist beendet.</p>
   </div>
+  <div id="winner-spotlight"></div>
+  <div class="section-label">Top 3</div>
   <div class="podest-grid" id="podest"></div>
+  <div class="section-label" id="rest-label" style="display:none;">Weitere Platzierungen</div>
   <div class="rest-list" id="rest-list"></div>
   <div class="actions">
     <button class="btn btn-primary" onclick="playAgain()">Nochmal spielen</button>
@@ -54,26 +84,62 @@
   function renderResults(results){
     if(!results||!results.length)return;
     const maxV=results[0].votes||1;
+    renderWinner(results[0], results.reduce((sum,item)=>sum+(Number(item.votes)||0),0));
     const podest=document.getElementById('podest');podest.innerHTML='';
     const medals=['🥇','🥈','🥉'],classes=['gold','silver','bronze'],top3=results.slice(0,3);
+    const rankPoints=[3,2,1];
     const order=top3.length>=3?[top3[1],top3[0],top3[2]]:top3.length===2?[top3[1],top3[0]]:[top3[0]];
     order.forEach(item=>{
       if(!item)return;
       const origIdx=top3.indexOf(item);
       const el=document.createElement('div');el.className=`podest-item ${classes[origIdx]||''}`;
-      const av=item.imagePath?`<img class="podest-avatar" src="${item.imagePath}" alt="${item.name}" onerror="this.style.display='none'">`:`<div style="width:88px;height:88px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:1.8rem">${item.avatar||'🙂'}</div>`;
-      el.innerHTML=`<div class="podest-medal">${medals[origIdx]||origIdx+1}</div><div class="avatar-chip" style="width:38px;height:38px;font-size:1.25rem;">${item.avatar||'🙂'}</div>${av}<div class="podest-name">${item.name}</div><div class="podest-votes">${item.votes} Stimme${item.votes!==1?'n':''}</div>${item.desc?`<div class="podest-desc">${item.desc}</div>`:''}`;
+      const av=item.imagePath?`<img class="podest-avatar" src="${escapeAttr(item.imagePath)}" alt="${escapeAttr(item.name)}" onerror="this.style.display='none'">`:`<div style="width:88px;height:88px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:1.8rem">${escapeHtml(item.avatar||'🙂')}</div>`;
+      el.innerHTML=`<div class="podest-medal">${medals[origIdx]||origIdx+1}</div><div class="avatar-chip" style="width:38px;height:38px;font-size:1.25rem;">${escapeHtml(item.avatar||'🙂')}</div>${av}<div class="podest-name">${escapeHtml(item.name)}</div><div class="podest-votes">${item.votes} Stimme${item.votes!==1?'n':''}</div><div class="rank-points">+${rankPoints[origIdx]||0} Punkte</div>${item.desc?`<div class="podest-desc">${escapeHtml(item.desc)}</div>`:''}`;
       podest.appendChild(el);
     });
     const restList=document.getElementById('rest-list');restList.innerHTML='';
+    document.getElementById('rest-label').style.display=results.length>3?'block':'none';
     results.slice(3).forEach((item,i)=>{
       const pct=Math.round((item.votes/maxV)*100);
       const row=document.createElement('div');row.className='result-row';row.style.animationDelay=(0.1+i*0.05)+'s';
-      const th=item.imagePath?`<img src="${item.imagePath}" style="width:44px;height:44px;object-fit:cover;border-radius:50%;border:1px solid var(--border2);" onerror="this.style.display='none'">`:``;
-      row.innerHTML=`<div class="result-rank">${i+4}</div><div class="avatar-chip">${item.avatar||'🙂'}</div>${th}<div class="result-info"><div class="result-name">${item.name}</div><div class="result-votes-text">${item.votes} Stimme${item.votes!==1?'n':''}</div></div><div class="result-bar-wrap"><div class="result-bar-track"><div class="result-bar-fill" style="width:${pct}%"></div></div><div class="result-pct">${pct}%</div></div>`;
+      const th=item.imagePath?`<img src="${escapeAttr(item.imagePath)}" style="width:44px;height:44px;object-fit:cover;border-radius:50%;border:1px solid var(--border2);" onerror="this.style.display='none'">`:``;
+      row.innerHTML=`<div class="result-rank">${i+4}</div><div class="avatar-chip">${escapeHtml(item.avatar||'🙂')}</div>${th}<div class="result-info"><div class="result-name">${escapeHtml(item.name)}</div><div class="result-votes-text">${item.votes} Stimme${item.votes!==1?'n':''}</div></div><div class="result-bar-wrap"><div class="result-bar-track"><div class="result-bar-fill" style="width:${pct}%"></div></div><div class="result-pct">${pct}%</div></div>`;
       restList.appendChild(row);
     });
   }
+
+  function renderWinner(winner,totalVotes){
+    const wrap=document.getElementById('winner-spotlight');
+    const pct=Math.round((winner.votes/Math.max(1,totalVotes))*100);
+    const media=winner.imagePath
+      ? `<img src="${escapeAttr(winner.imagePath)}" alt="${escapeAttr(winner.name)}" onerror="this.outerHTML='<div class=\\'winner-fallback\\'>${escapeHtml(winner.avatar||'🙂')}</div>'">`
+      : `<div class="winner-fallback">${escapeHtml(winner.avatar||'🙂')}</div>`;
+    wrap.innerHTML=`
+      <div class="winner-spotlight fade-in">
+        <div class="winner-media">
+          ${media}
+          <div class="winner-ribbon">🏆 Champion</div>
+        </div>
+        <div class="winner-content">
+          <div>
+            <div class="winner-label">Sieger des Battles</div>
+            <div class="winner-name">${escapeHtml(winner.name)}</div>
+            ${winner.desc?`<div class="winner-desc">${escapeHtml(winner.desc)}</div>`:''}
+          </div>
+          <div class="winner-stats">
+            <div class="winner-stat"><div class="winner-stat-value">${winner.votes}</div><div class="winner-stat-label">Stimmen</div></div>
+            <div class="winner-stat"><div class="winner-stat-value">+3</div><div class="winner-stat-label">Punkte</div></div>
+            <div class="winner-stat"><div class="winner-stat-value">${pct}%</div><div class="winner-stat-label">Score</div></div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function escapeHtml(value){
+    return String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  }
+  function escapeAttr(value){ return escapeHtml(value); }
+
   function playAgain(){Session.clear();window.location.href='/';}
   function goHome(){Session.clear();window.location.href='/';}
   socket.on('error',msg=>showToast('❌ '+msg));
