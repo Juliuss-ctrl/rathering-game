@@ -1,7 +1,13 @@
+const fs = require('fs');
+const path = require('path');
+
 const rooms = new Map();
 const leaderboard = new Map();
 const DEFAULT_AVATAR = '🙂';
 const RANK_POINTS = [3, 2, 1];
+const LEADERBOARD_FILE = process.env.LEADERBOARD_FILE || path.join(__dirname, 'data', 'leaderboard.json');
+
+loadLeaderboard();
 
 function normalizeAvatar(avatar) {
   return typeof avatar === 'string' && avatar.trim() ? avatar.trim().slice(0, 4) : DEFAULT_AVATAR;
@@ -157,11 +163,43 @@ function awardLeaderboardPoints(room, results) {
   });
 
   room.leaderboardScored = true;
+  saveLeaderboard();
 }
 
 function getLeaderboard() {
   return Array.from(leaderboard.values())
     .sort((a, b) => b.points - a.points || b.wins - a.wins || a.name.localeCompare(b.name));
+}
+
+function loadLeaderboard() {
+  try {
+    if (!fs.existsSync(LEADERBOARD_FILE)) return;
+    const raw = fs.readFileSync(LEADERBOARD_FILE, 'utf8');
+    const entries = JSON.parse(raw);
+    if (!Array.isArray(entries)) return;
+
+    entries.forEach(entry => {
+      if (!entry || typeof entry.name !== 'string') return;
+      leaderboard.set(entry.name, {
+        name: entry.name,
+        avatar: normalizeAvatar(entry.avatar),
+        points: Number(entry.points) || 0,
+        games: Number(entry.games) || 0,
+        wins: Number(entry.wins) || 0,
+      });
+    });
+  } catch (err) {
+    console.error('Leaderboard konnte nicht geladen werden:', err.message);
+  }
+}
+
+function saveLeaderboard() {
+  try {
+    fs.mkdirSync(path.dirname(LEADERBOARD_FILE), { recursive: true });
+    fs.writeFileSync(LEADERBOARD_FILE, JSON.stringify(getLeaderboard(), null, 2));
+  } catch (err) {
+    console.error('Leaderboard konnte nicht gespeichert werden:', err.message);
+  }
 }
 
 function removePlayer(socketId) {
