@@ -10,6 +10,11 @@
 .battle-page{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh;}
 .battle-header{padding:20px 44px 12px;display:flex;flex-direction:column;gap:8px;flex-shrink:0;}
 .battle-meta{display:flex;justify-content:space-between;align-items:center;}
+.battle-status{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;}
+.timer-pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border2);border-radius:50px;background:var(--surface2);padding:7px 13px;font-size:0.78rem;font-weight:700;color:var(--text);}
+.timer-dot{width:8px;height:8px;border-radius:50%;background:var(--success);box-shadow:0 0 10px var(--success);}
+.timer-pill.danger{border-color:rgba(245,158,11,0.42);color:var(--gold);}
+.timer-pill.danger .timer-dot{background:var(--gold);box-shadow:0 0 10px var(--gold);}
 .battle-q{text-align:center;font-family:var(--font-head);font-size:clamp(1.3rem,2.5vw,2rem);font-weight:700;letter-spacing:-0.01em;color:var(--text);padding-top:6px;}
 .arena{flex:1;display:flex;align-items:center;justify-content:center;padding:10px 36px;gap:20px;min-height:0;}
 .battle-card{flex:1;max-width:500px;min-height:0;max-height:100%;}
@@ -69,6 +74,9 @@
       <div class="badge"><span class="dot"></span><span id="code-label">——</span></div>
     </div>
     <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    <div class="battle-status">
+      <div class="timer-pill" id="timer-pill"><span class="timer-dot"></span><span id="timer-label">15s</span></div>
+    </div>
     <div class="battle-q">Was gefällt dir besser?</div>
   </div>
 
@@ -103,15 +111,16 @@
     else socket.emit('join_room',{code,playerName:name,avatar,playerId});
     setTimeout(()=>socket.emit('request_current_pair',{code}),1500);
   });
-  let hasVoted=false, currentLeft=null, currentRight=null;
-  socket.on('new_pair',({pairIndex,totalPairs,left,right})=>{
+  let hasVoted=false, currentLeft=null, currentRight=null, timerInterval=null, currentTimerEndsAt=0;
+  socket.on('new_pair',({pairIndex,totalPairs,bracketRound,timerEndsAt,roundSeconds,left,right})=>{
     hasVoted=false;currentLeft=left;currentRight=right;
-    document.getElementById('round-label').textContent=`Runde ${pairIndex+1} / ${totalPairs}`;
-    document.getElementById('progress-fill').style.width=Math.round((pairIndex/totalPairs)*100)+'%';
+    document.getElementById('round-label').textContent=`Turnierrunde ${bracketRound||1} · Duell ${pairIndex+1} / ${totalPairs}`;
+    document.getElementById('progress-fill').style.width=Math.round((pairIndex/Math.max(1,totalPairs))*100)+'%';
     document.getElementById('card-left').classList.remove('voted');
     document.getElementById('card-right').classList.remove('voted');
     setCard('left',left);setCard('right',right);
     document.getElementById('vote-status').textContent='';
+    startTimer(timerEndsAt, roundSeconds || 15);
   });
   function setCard(side,data){
     const iw=document.getElementById('img-'+side);
@@ -132,8 +141,29 @@
     socket.emit('vote',{code,winnerId:winner.playerId,winnerName:winner.name});
   }
   socket.on('vote_update',({votedCount,total})=>{document.getElementById('vote-status').textContent=`${votedCount} / ${total} haben abgestimmt`;});
+  socket.on('time_up',()=>{
+    soundTimeUp();
+    document.getElementById('vote-status').textContent='Zeit abgelaufen';
+    document.getElementById('timer-label').textContent='0s';
+    document.getElementById('timer-pill').classList.add('danger');
+  });
   socket.on('show_results',({results})=>{Session.set('results',results);window.location.href='/results.html';});
   socket.on('error',msg=>showToast('❌ '+msg));
+
+  function startTimer(timerEndsAt, roundSeconds){
+    clearInterval(timerInterval);
+    currentTimerEndsAt = timerEndsAt || Date.now() + roundSeconds * 1000;
+    const pill=document.getElementById('timer-pill');
+    const label=document.getElementById('timer-label');
+    function tick(){
+      const remaining=Math.max(0, Math.ceil((currentTimerEndsAt-Date.now())/1000));
+      label.textContent=remaining+'s';
+      pill.classList.toggle('danger', remaining<=5);
+      if(remaining<=0) clearInterval(timerInterval);
+    }
+    tick();
+    timerInterval=setInterval(tick,250);
+  }
 </script>
 </body>
 </html>

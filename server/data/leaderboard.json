@@ -1,4 +1,69 @@
 {
-  "leaderboard": [],
-  "history": []
+  "leaderboard": [
+    {
+      "playerId": "p1",
+      "name": "B",
+      "avatar": "🙂",
+      "imagePath": "/x1.jpg",
+      "points": 3,
+      "games": 1,
+      "wins": 1
+    },
+    {
+      "playerId": "p4",
+      "name": "E",
+      "avatar": "🙂",
+      "imagePath": "/x4.jpg",
+      "points": 2,
+      "games": 1,
+      "wins": 0
+    },
+    {
+      "playerId": "p3",
+      "name": "D",
+      "avatar": "🙂",
+      "imagePath": "/x3.jpg",
+      "points": 1,
+      "games": 1,
+      "wins": 0
+    }
+  ],
+  "history": [
+    {
+      "id": "TST123-1779207282976-3-p3",
+      "date": "2026-05-19T16:14:42.976Z",
+      "roomCode": "TST123",
+      "rank": 3,
+      "points": 1,
+      "votes": 1,
+      "playerId": "p3",
+      "name": "D",
+      "avatar": "🙂",
+      "imagePath": "/x3.jpg"
+    },
+    {
+      "id": "TST123-1779207282976-2-p4",
+      "date": "2026-05-19T16:14:42.976Z",
+      "roomCode": "TST123",
+      "rank": 2,
+      "points": 2,
+      "votes": 1,
+      "playerId": "p4",
+      "name": "E",
+      "avatar": "🙂",
+      "imagePath": "/x4.jpg"
+    },
+    {
+      "id": "TST123-1779207282946-1-p1",
+      "date": "2026-05-19T16:14:42.946Z",
+      "roomCode": "TST123",
+      "rank": 1,
+      "points": 3,
+      "votes": 2,
+      "playerId": "p1",
+      "name": "B",
+      "avatar": "🙂",
+      "imagePath": "/x1.jpg"
+    }
+  ]
 }

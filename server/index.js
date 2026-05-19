@@ -15,7 +15,7 @@ cloudinary.config({
 const {
   createRoom, joinRoom, setPlayerImage, allUploaded,
   buildPairs, castVote, allVoted, nextPair, getResults,
-  removePlayer, getRoomBySocket, rooms, normalizeAvatar, getLeaderboard, getHistory, resetLeaderboard
+  removePlayer, getRoomBySocket, rooms, normalizeAvatar, getLeaderboard, getHistory, resetLeaderboard, resetRoomForRematch
 } = require('./gameLogic');
 
 const app    = express();
@@ -97,6 +97,8 @@ io.on('connection', socket => {
         socket.emit('phase_battle');
       } else if (room.state === 'upload') {
         socket.emit('phase_upload');
+      } else if (room.state === 'results') {
+        socket.emit('show_results', { results: getResults(room) });
       } else {
         io.to(code).emit('lobby_update', {
           players: publicPlayers(room),
@@ -124,6 +126,8 @@ io.on('connection', socket => {
     // Spieler auf richtige Seite schicken je nach State
     if (room.state === 'battle') {
       socket.emit('phase_battle');
+    } else if (room.state === 'results') {
+      socket.emit('show_results', { results: getResults(room) });
     } else if (room.state === 'upload') {
       socket.emit('phase_upload');
       io.to(room.code).emit('upload_update', {
@@ -171,6 +175,8 @@ io.on('connection', socket => {
   socket.on('start_battle', ({ code }) => {
     const room = rooms.get(code);
     if (!room) { socket.emit('error', 'Room nicht gefunden'); return; }
+    if (room.host !== socket.id) { socket.emit('error', 'Nur der Host kann das Battle starten'); return; }
+    if (room.state === 'battle') return;
     buildPairs(room);
     if (!room.pairs.length) {
       room.state = 'results';
@@ -181,7 +187,7 @@ io.on('connection', socket => {
     // Alle Spieler zur Battle-Seite schicken
     io.to(code).emit('phase_battle');
     // Kleiner Delay damit alle Zeit haben zu laden
-    setTimeout(() => sendCurrentPair(room), 2500);
+    setTimeout(() => startCurrentPair(room), 2500);
   });
 
   socket.on('request_current_pair', ({ code }) => {
@@ -191,6 +197,9 @@ io.on('connection', socket => {
     socket.emit('new_pair', {
       pairIndex: room.currentPair,
       totalPairs: room.pairs.length,
+      bracketRound: room.bracketRound,
+      timerEndsAt: room.timerEndsAt,
+      roundSeconds: room.roundSeconds,
       left:  pair[0],
       right: pair[1],
     });
@@ -203,9 +212,10 @@ io.on('connection', socket => {
     if (!ok) return;
     io.to(code).emit('vote_update', { votedCount: room.votedThisRound.size, total: room.voterCount });
     if (allVoted(room)) {
+      clearRoomTimer(room);
       const hasMore = nextPair(room);
       if (hasMore) {
-        setTimeout(() => sendCurrentPair(room), 1200);
+        setTimeout(() => startCurrentPair(room), 1200);
       } else {
         room.state = 'results';
         io.to(code).emit('show_results', { results: getResults(room) });
@@ -214,14 +224,30 @@ io.on('connection', socket => {
   });
 
   socket.on('check_state', ({ code }) => {
-  const room = rooms.get(code);
-  if (!room) return;
-  if (room.state === 'battle') {
-    socket.emit('phase_battle');
-  } else if (room.state === 'results') {
-    socket.emit('show_results', { results: getResults(room) });
-  }
-});
+    const room = rooms.get(code);
+    if (!room) return;
+    if (room.state === 'battle') {
+      socket.emit('phase_battle');
+    } else if (room.state === 'results') {
+      socket.emit('show_results', { results: getResults(room) });
+    } else if (room.state === 'upload') {
+      socket.emit('phase_upload');
+    }
+  });
+
+  socket.on('rematch', ({ code }) => {
+    const room = rooms.get(code);
+    if (!room) { socket.emit('error', 'Room nicht gefunden'); return; }
+    if (room.host !== socket.id) { socket.emit('error', 'Nur der Host kann ein Rematch starten'); return; }
+    resetRoomForRematch(room);
+    io.to(code).emit('rematch_started', {
+      code,
+      players: publicPlayers(room),
+      host: publicHost(room),
+      hostName: room.hostName,
+    });
+    io.to(code).emit('phase_upload');
+  });
 
   socket.on('disconnect', () => {
     const room = getRoomBySocket(socket.id);
@@ -241,9 +267,35 @@ function sendCurrentPair(room) {
   io.to(room.code).emit('new_pair', {
     pairIndex: room.currentPair,
     totalPairs: room.pairs.length,
+    bracketRound: room.bracketRound,
+    timerEndsAt: room.timerEndsAt,
+    roundSeconds: room.roundSeconds,
     left:  pair[0],
     right: pair[1],
   });
+}
+
+function startCurrentPair(room) {
+  if (!room || room.state !== 'battle') return;
+  room.timerEndsAt = Date.now() + room.roundSeconds * 1000;
+  sendCurrentPair(room);
+  clearRoomTimer(room);
+  room.timerId = setTimeout(() => {
+    if (!room || room.state !== 'battle') return;
+    io.to(room.code).emit('time_up');
+    const hasMore = nextPair(room);
+    if (hasMore) {
+      setTimeout(() => startCurrentPair(room), 1200);
+    } else {
+      room.state = 'results';
+      io.to(room.code).emit('show_results', { results: getResults(room) });
+    }
+  }, room.roundSeconds * 1000);
+}
+
+function clearRoomTimer(room) {
+  if (room.timerId) clearTimeout(room.timerId);
+  room.timerId = null;
 }
 
 server.listen(PORT, () => console.log(`🎮 Rathering-Game läuft auf http://localhost:${PORT}`));

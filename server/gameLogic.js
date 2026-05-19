@@ -7,6 +7,7 @@ const history = [];
 const DEFAULT_AVATAR = '🙂';
 const RANK_POINTS = [3, 2, 1];
 const LEADERBOARD_FILE = process.env.LEADERBOARD_FILE || path.join(__dirname, 'data', 'leaderboard.json');
+const ROUND_SECONDS = 15;
 
 loadLeaderboard();
 
@@ -37,7 +38,17 @@ function createRoom(hostSocketId, hostName, forceCode, hostAvatar, hostPlayerId)
     state: 'lobby',
     pairs: [], currentPair: 0,
     votes: {}, votedThisRound: new Set(),
+    pairVotes: {},
     leaderboardScored: false,
+    battleMode: 'tournament',
+    bracketRound: 1,
+    roundWinners: [],
+    eliminated: [],
+    finalRanking: [],
+    voterCount: 0,
+    roundSeconds: ROUND_SECONDS,
+    timerEndsAt: null,
+    timerId: null,
     // Snapshot der Spieler beim Battle-Start
     battlePlayers: [],
   };
@@ -99,45 +110,38 @@ function allUploaded(room) {
 }
 
 function buildPairs(room) {
-  // Snapshot der aktiven Spieler beim Battle-Start speichern
   const imgs = room.players
     .filter(p => p.imagePath)
     .map(p => ({ playerId: p.playerId, name: p.name, avatar: p.avatar || DEFAULT_AVATAR, path: p.imagePath, desc: p.imageDesc }));
 
-  for (let i = imgs.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [imgs[i], imgs[j]] = [imgs[j], imgs[i]];
-  }
-
-  const pairs = [];
-  for (let i = 0; i < imgs.length; i++) {
-    for (let j = i + 1; j < imgs.length; j++) {
-      pairs.push([imgs[i], imgs[j]]);
-    }
-  }
-
-  for (let i = pairs.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [pairs[i], pairs[j]] = [pairs[j], pairs[i]];
-  }
-
-  room.pairs = pairs;
+  shuffle(imgs);
   room.currentPair = 0;
   room.votes = {};
   room.votedThisRound = new Set();
-  // Anzahl der Wähler = Anzahl Spieler mit Bild (eingefroren beim Start)
+  room.pairVotes = {};
   room.voterCount = imgs.length;
   room.battlePlayers = imgs;
+  room.battleMode = 'tournament';
+  room.bracketRound = 1;
+  room.roundWinners = [];
+  room.eliminated = [];
+  room.finalRanking = [];
+  room.timerEndsAt = null;
   imgs.forEach(img => { room.votes[img.playerId] = 0; });
+  buildTournamentRound(room, imgs);
 
-  console.log(`Battle started with ${room.voterCount} voters`);
+  if (imgs.length === 1) room.finalRanking = imgs;
+  console.log(`Tournament started with ${room.voterCount} voters`);
 }
 
 function castVote(room, socketId, winnerId, winnerName) {
   if (room.votedThisRound.has(socketId)) return false;
   room.votedThisRound.add(socketId);
   const voteKey = winnerId || room.battlePlayers.find(p => p.name === winnerName)?.playerId;
-  if (room.votes[voteKey] !== undefined) room.votes[voteKey]++;
+  if (room.votes[voteKey] !== undefined) {
+    room.votes[voteKey]++;
+    room.pairVotes[voteKey] = (room.pairVotes[voteKey] || 0) + 1;
+  }
   console.log(`Vote: ${winnerName || voteKey} | ${room.votedThisRound.size} / ${room.voterCount}`);
   return true;
 }
@@ -148,14 +152,32 @@ function allVoted(room) {
 }
 
 function nextPair(room) {
+  decideCurrentPairWinner(room);
   room.currentPair++;
   room.votedThisRound = new Set();
-  return room.currentPair < room.pairs.length;
+  room.pairVotes = {};
+  if (room.currentPair < room.pairs.length) return true;
+
+  if (room.roundWinners.length <= 1) {
+    room.finalRanking = [
+      ...room.roundWinners,
+      ...room.eliminated.slice().reverse().map(entry => entry.player),
+    ];
+    return false;
+  }
+
+  room.bracketRound++;
+  buildTournamentRound(room, room.roundWinners);
+  return room.pairs.length > 0;
 }
 
 function getResults(room) {
-  const results = Object.entries(room.votes)
-    .sort((a, b) => b[1] - a[1])
+  const ranking = room.finalRanking.length
+    ? room.finalRanking
+    : room.battlePlayers.slice().sort((a, b) => (room.votes[b.playerId] || 0) - (room.votes[a.playerId] || 0));
+
+  const results = ranking
+    .map(player => [player.playerId, room.votes[player.playerId] || 0])
     .map(([playerId, votes]) => {
       const player = room.players.find(p => p.playerId === playerId) || room.battlePlayers.find(p => p.playerId === playerId);
       return {
@@ -170,6 +192,70 @@ function getResults(room) {
 
   awardLeaderboardPoints(room, results);
   return results;
+}
+
+function shuffle(items) {
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+}
+
+function buildTournamentRound(room, contestants) {
+  room.pairs = [];
+  room.currentPair = 0;
+  room.roundWinners = [];
+  room.votedThisRound = new Set();
+  room.pairVotes = {};
+
+  for (let i = 0; i < contestants.length; i += 2) {
+    const left = contestants[i];
+    const right = contestants[i + 1];
+    if (right) room.pairs.push([left, right]);
+    else room.roundWinners.push(left);
+  }
+}
+
+function decideCurrentPairWinner(room) {
+  const pair = room.pairs[room.currentPair];
+  if (!pair) return null;
+  const [left, right] = pair;
+  const leftVotes = room.pairVotes[left.playerId] || 0;
+  const rightVotes = room.pairVotes[right.playerId] || 0;
+  const winner = leftVotes === rightVotes
+    ? pair[Math.floor(Math.random() * pair.length)]
+    : leftVotes > rightVotes ? left : right;
+  const loser = winner.playerId === left.playerId ? right : left;
+  room.roundWinners.push(winner);
+  room.eliminated.push({
+    player: loser,
+    round: room.bracketRound,
+    votes: room.votes[loser.playerId] || 0,
+  });
+  return winner;
+}
+
+function resetRoomForRematch(room) {
+  if (room.timerId) clearTimeout(room.timerId);
+  room.timerId = null;
+  room.timerEndsAt = null;
+  room.state = 'upload';
+  room.pairs = [];
+  room.currentPair = 0;
+  room.votes = {};
+  room.votedThisRound = new Set();
+  room.pairVotes = {};
+  room.leaderboardScored = false;
+  room.bracketRound = 1;
+  room.roundWinners = [];
+  room.eliminated = [];
+  room.finalRanking = [];
+  room.voterCount = 0;
+  room.battlePlayers = [];
+  room.players.forEach(player => {
+    player.imagePath = null;
+    player.imageDesc = '';
+  });
 }
 
 function awardLeaderboardPoints(room, results) {
@@ -272,8 +358,14 @@ function saveLeaderboard() {
 function removePlayer(socketId) {
   for (const [code, room] of rooms) {
     const idx = room.players.findIndex(p => p.socketId === socketId);
-    if (idx !== -1) { room.players.splice(idx, 1); return room; }
-    if (room.host === socketId) { rooms.delete(code); return null; }
+    if (idx !== -1) {
+      if (room.state === 'lobby') room.players.splice(idx, 1);
+      return room;
+    }
+    if (room.host === socketId) {
+      if (room.state === 'lobby') rooms.delete(code);
+      return null;
+    }
   }
   return undefined;
 }
@@ -289,5 +381,5 @@ function getRoomBySocket(socketId) {
 module.exports = {
   createRoom, joinRoom, setPlayerImage, allUploaded,
   buildPairs, castVote, allVoted, nextPair, getResults,
-  removePlayer, getRoomBySocket, rooms, normalizeAvatar, getLeaderboard, getHistory, resetLeaderboard
+  removePlayer, getRoomBySocket, rooms, normalizeAvatar, getLeaderboard, getHistory, resetLeaderboard, resetRoomForRematch
 };

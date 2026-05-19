@@ -121,3 +121,4 @@ function soundClick()  { playTone(800, 40, 0.08); }
 function soundVote()   { playTone(600, 80, 0.12); setTimeout(() => playTone(900, 60, 0.08), 80); }
 function soundStart()  { playTone(500, 80, 0.10); setTimeout(() => playTone(630, 80, 0.10), 90); setTimeout(() => playTone(750, 120, 0.12), 180); }
 function soundResult() { playTone(750, 100, 0.12); setTimeout(() => playTone(940, 100, 0.12), 110); setTimeout(() => playTone(1120, 180, 0.14), 220); }
+function soundTimeUp() { playTone(220, 140, 0.14); setTimeout(() => playTone(165, 180, 0.14), 150); }

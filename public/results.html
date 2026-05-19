@@ -63,7 +63,7 @@
   <div class="section-label" id="rest-label" style="display:none;">Weitere Platzierungen</div>
   <div class="rest-list" id="rest-list"></div>
   <div class="actions">
-    <button class="btn btn-primary" onclick="playAgain()">Nochmal spielen</button>
+    <button class="btn btn-primary" id="btn-rematch" onclick="rematch()" style="display:none;">Rematch gleiche Lobby</button>
     <button class="btn btn-ghost"   onclick="goHome()">Startseite</button>
   </div>
 </div>
@@ -74,6 +74,7 @@
   initStarfield();
   initThemeToggle();
   const role=Session.get('role'),code=Session.get('code'),name=Session.get('name'),avatar=Session.get('avatar')||'🙂',playerId=Session.get('playerId')||getPlayerId();
+  if(role==='host') document.getElementById('btn-rematch').style.display='inline-flex';
   const socket=io();
  socket.on('connect', () => {
   if (role==='host') socket.emit('host_rejoin',{code,hostName:name,avatar,playerId});
@@ -82,6 +83,8 @@
   soundResult();
   const saved=Session.get('results');if(saved)renderResults(saved);
   socket.on('show_results',({results})=>{Session.set('results',results);renderResults(results);});
+  socket.on('phase_upload',()=>{Session.set('results',null);window.location.href='/upload.html';});
+  socket.on('rematch_started',()=>{Session.set('results',null);});
 
   function renderResults(results){
     if(!results||!results.length)return;
@@ -142,7 +145,11 @@
   }
   function escapeAttr(value){ return escapeHtml(value); }
 
-  function playAgain(){Session.clear();window.location.href='/';}
+  function rematch(){
+    if(role!=='host')return;
+    document.getElementById('btn-rematch').disabled=true;
+    socket.emit('rematch',{code});
+  }
   function goHome(){Session.clear();window.location.href='/';}
   socket.on('error',msg=>showToast('❌ '+msg));
 </script>
