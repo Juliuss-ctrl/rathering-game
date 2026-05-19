@@ -104,6 +104,15 @@ html, body {
   color: var(--text);
 }
 
+.title-xl {
+  font-family: var(--font-head);
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 0.95;
+  color: var(--text);
+}
+
 .title-lg {
   font-family: var(--font-head);
   font-size: clamp(1.8rem, 4vw, 2.8rem);

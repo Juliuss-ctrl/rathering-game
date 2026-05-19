@@ -1,5 +1,7 @@
 const rooms = new Map();
+const leaderboard = new Map();
 const DEFAULT_AVATAR = '🙂';
+const RANK_POINTS = [3, 2, 1];
 
 function normalizeAvatar(avatar) {
   return typeof avatar === 'string' && avatar.trim() ? avatar.trim().slice(0, 4) : DEFAULT_AVATAR;
@@ -20,6 +22,7 @@ function createRoom(hostSocketId, hostName, forceCode, hostAvatar) {
     state: 'lobby',
     pairs: [], currentPair: 0,
     votes: {}, votedThisRound: new Set(),
+    leaderboardScored: false,
     // Snapshot der Spieler beim Battle-Start
     battlePlayers: [],
   };
@@ -122,12 +125,43 @@ function nextPair(room) {
 }
 
 function getResults(room) {
-  return Object.entries(room.votes)
+  const results = Object.entries(room.votes)
     .sort((a, b) => b[1] - a[1])
     .map(([name, votes]) => {
       const player = room.players.find(p => p.name === name);
       return { name, votes, avatar: player?.avatar || DEFAULT_AVATAR, imagePath: player?.imagePath || '', desc: player?.imageDesc || '' };
     });
+
+  awardLeaderboardPoints(room, results);
+  return results;
+}
+
+function awardLeaderboardPoints(room, results) {
+  if (room.leaderboardScored) return;
+
+  results.slice(0, RANK_POINTS.length).forEach((result, index) => {
+    const points = RANK_POINTS[index];
+    const current = leaderboard.get(result.name) || {
+      name: result.name,
+      avatar: result.avatar || DEFAULT_AVATAR,
+      points: 0,
+      games: 0,
+      wins: 0,
+    };
+
+    current.avatar = result.avatar || current.avatar || DEFAULT_AVATAR;
+    current.points += points;
+    current.games += 1;
+    if (index === 0) current.wins += 1;
+    leaderboard.set(result.name, current);
+  });
+
+  room.leaderboardScored = true;
+}
+
+function getLeaderboard() {
+  return Array.from(leaderboard.values())
+    .sort((a, b) => b.points - a.points || b.wins - a.wins || a.name.localeCompare(b.name));
 }
 
 function removePlayer(socketId) {
@@ -150,5 +184,5 @@ function getRoomBySocket(socketId) {
 module.exports = {
   createRoom, joinRoom, setPlayerImage, allUploaded,
   buildPairs, castVote, allVoted, nextPair, getResults,
-  removePlayer, getRoomBySocket, rooms, normalizeAvatar
+  removePlayer, getRoomBySocket, rooms, normalizeAvatar, getLeaderboard
 };

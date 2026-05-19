@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leaderboard - Rathering Game</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .leaderboard-page{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:56px 20px 48px;}
+    .leaderboard-header{text-align:center;margin-bottom:32px;}
+    .leaderboard-card{width:100%;max-width:680px;padding:22px;display:flex;flex-direction:column;gap:10px;}
+    .leaderboard-row{display:grid;grid-template-columns:42px 42px 1fr auto;align-items:center;gap:14px;border:1px solid var(--border);background:var(--surface2);border-radius:var(--r);padding:14px 16px;}
+    .leaderboard-rank{font-family:var(--font-head);font-size:1.15rem;font-weight:700;color:var(--text2);text-align:center;}
+    .leaderboard-name{font-weight:600;color:var(--text);}
+    .leaderboard-meta{font-size:0.76rem;color:var(--text3);}
+    .leaderboard-points{font-family:var(--font-head);font-size:1.25rem;font-weight:700;color:var(--text);}
+    .points-label{font-size:0.68rem;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;text-align:right;}
+    .empty-state{padding:36px 20px;text-align:center;color:var(--text2);}
+    .score-rules{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:16px;}
+    .score-pill{border:1px solid var(--border2);background:var(--surface2);border-radius:50px;padding:6px 12px;font-size:0.76rem;color:var(--text2);}
+    .actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:24px;}
+    @media(max-width:520px){
+      .leaderboard-row{grid-template-columns:34px 38px 1fr;gap:10px;}
+      .leaderboard-points{grid-column:3;text-align:left;}
+      .points-label{text-align:left;}
+    }
+  </style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div class="leaderboard-page">
+  <div class="leaderboard-header fade-in">
+    <div style="font-size:3rem;margin-bottom:12px;">🏆</div>
+    <h1 class="title-xl">Leaderboard</h1>
+    <p class="sub" style="margin-top:8px;">Gesamtpunkte aus allen beendeten Spielen.</p>
+    <div class="score-rules">
+      <span class="score-pill">1. Platz = 3 Punkte</span>
+      <span class="score-pill">2. Platz = 2 Punkte</span>
+      <span class="score-pill">3. Platz = 1 Punkt</span>
+    </div>
+  </div>
+
+  <div class="glass-card leaderboard-card fade-in" id="leaderboard" style="animation-delay:0.1s;">
+    <div class="empty-state">Leaderboard wird geladen...</div>
+  </div>
+
+  <div class="actions fade-in" style="animation-delay:0.2s;">
+    <a class="btn btn-primary" href="/">Startseite</a>
+  </div>
+</div>
+<div id="toast"></div>
+<script src="shared.js"></script>
+<script>
+  initStarfield();
+  initThemeToggle();
+  loadLeaderboard();
+
+  async function loadLeaderboard() {
+    const container = document.getElementById('leaderboard');
+    try {
+      const res = await fetch('/api/leaderboard');
+      const data = await res.json();
+      renderLeaderboard(data.leaderboard || []);
+    } catch (err) {
+      container.innerHTML = '<div class="empty-state">Leaderboard konnte nicht geladen werden.</div>';
+    }
+  }
+
+  function renderLeaderboard(entries) {
+    const container = document.getElementById('leaderboard');
+    if (!entries.length) {
+      container.innerHTML = '<div class="empty-state">Noch keine Punkte. Beendet ein Spiel, dann erscheint hier die Rangliste.</div>';
+      return;
+    }
+
+    container.innerHTML = '';
+    entries.forEach((entry, index) => {
+      const row = document.createElement('div');
+      row.className = 'leaderboard-row';
+      row.style.animationDelay = (index * 0.04) + 's';
+      row.innerHTML = `
+        <div class="leaderboard-rank">${index + 1}</div>
+        <div class="avatar-chip" style="width:42px;height:42px;font-size:1.35rem;">${entry.avatar || '🙂'}</div>
+        <div>
+          <div class="leaderboard-name">${entry.name}</div>
+          <div class="leaderboard-meta">${entry.wins || 0} Sieg${entry.wins === 1 ? '' : 'e'}</div>
+        </div>
+        <div>
+          <div class="leaderboard-points">${entry.points}</div>
+          <div class="points-label">Punkte</div>
+        </div>
+      `;
+      container.appendChild(row);
+    });
+  }
+</script>
+</body>
+</html>

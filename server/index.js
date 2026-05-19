@@ -15,7 +15,7 @@ cloudinary.config({
 const {
   createRoom, joinRoom, setPlayerImage, allUploaded,
   buildPairs, castVote, allVoted, nextPair, getResults,
-  removePlayer, getRoomBySocket, rooms, normalizeAvatar
+  removePlayer, getRoomBySocket, rooms, normalizeAvatar, getLeaderboard
 } = require('./gameLogic');
 
 const app    = express();
@@ -29,6 +29,10 @@ if (!fs.existsSync(UPLOADS)) fs.mkdirSync(UPLOADS, { recursive: true });
 
 app.use(express.json());
 app.use(express.static(PUBLIC));
+
+app.get('/api/leaderboard', (req, res) => {
+  res.json({ leaderboard: getLeaderboard() });
+});
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOADS),
