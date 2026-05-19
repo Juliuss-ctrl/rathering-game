@@ -7,13 +7,36 @@
   <link rel="stylesheet" href="style.css">
   <style>
     body { display:flex; align-items:center; justify-content:center; min-height:100vh; }
-    .wrap { position:relative; z-index:1; width:100%; max-width:520px; padding:24px; display:flex; flex-direction:column; align-items:center; gap:28px; }
+    .wrap { position:relative; z-index:1; width:100%; max-width:560px; padding:28px 24px; display:flex; flex-direction:column; align-items:center; gap:28px; }
     .hero { text-align:center; width:100%; }
-    .card-body { padding:32px; width:100%; }
+    .card-body { padding:34px; width:100%; }
     .panel { display:none; flex-direction:column; gap:16px; }
     .panel.active { display:flex; }
-    .steps { display:flex; flex-direction:column; gap:10px; width:100%; }
+    .steps { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; width:100%; }
+    .step-item { align-items:flex-start; background:rgba(255,255,255,0.025); border:1px solid var(--border); border-radius:var(--r); padding:12px; min-height:86px; }
     .footer-text { font-size:0.7rem; color:var(--text3); letter-spacing:0.08em; text-transform:uppercase; }
+    .home-actions { width:100%; display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .home-action {
+      min-height:64px;
+      border-radius:16px;
+      border:1px solid var(--border2);
+      background:linear-gradient(180deg,var(--surface) 0%,var(--surface2) 100%);
+      color:var(--text);
+      box-shadow:0 16px 36px rgba(0,0,0,0.22);
+      font-size:0.9rem;
+      letter-spacing:0.02em;
+      text-transform:none;
+      padding:14px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+      gap:12px;
+      text-align:left;
+    }
+    .home-action:hover { border-color:var(--accent); background:var(--surface2); color:var(--text); transform:translateY(-2px); box-shadow:0 20px 44px rgba(99,102,241,0.18); }
+    .home-action-icon { width:36px; height:36px; border-radius:12px; display:flex; align-items:center; justify-content:center; background:rgba(99,102,241,0.14); color:#fff; font-size:1.2rem; flex-shrink:0; }
+    .home-action-title { display:block; font-weight:700; line-height:1.1; }
+    .home-action-sub { display:block; margin-top:3px; font-size:0.72rem; color:var(--text2); font-weight:500; }
     .code-input { text-align:center; letter-spacing:0.16em; font-weight:600; font-size:1.05rem; text-transform:uppercase; }
     #about-overlay { display:none; position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,0.75); backdrop-filter:blur(10px); align-items:center; justify-content:center; padding:20px; }
     #about-box { background:var(--surface); border:1px solid var(--border2); border-radius:var(--r2); padding:48px; max-width:780px; width:100%; max-height:92vh; overflow-y:auto; position:relative; box-shadow:0 40px 80px rgba(0,0,0,0.6); animation:modal-in 0.3s cubic-bezier(0.34,1.56,0.64,1); }
@@ -26,6 +49,13 @@
     .member-name { font-weight:600; color:var(--text); font-size:1.05rem; }
     .member-desc { font-size:0.88rem; color:var(--text2); line-height:1.5; }
     .member-card.sick { opacity:0.55; }
+    @media(max-width:620px){
+      .wrap { padding:24px 18px; }
+      .card-body { padding:26px; }
+      .steps { grid-template-columns:1fr; }
+      .step-item { min-height:auto; align-items:center; }
+      .home-actions { grid-template-columns:1fr; }
+    }
   </style>
 </head>
 <body>
@@ -151,8 +181,23 @@
 
   <div style="display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;" class="fade-in">
     <span class="footer-text">GIG — Gewinnen ist Geil</span>
-    <a class="btn btn-ghost" href="/leaderboard.html" style="font-size:0.7rem;letter-spacing:0.08em;text-transform:uppercase;padding:6px 12px;border-radius:8px;">Leaderboard</a>
-    <button onclick="openAbout()" style="background:transparent;border:1px solid var(--border2);border-radius:8px;color:var(--text2);font-family:var(--font);font-size:0.7rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;padding:6px 12px;cursor:pointer;transition:all 0.15s;">Über uns</button>
+  </div>
+
+  <div class="home-actions fade-in" style="animation-delay:0.25s;">
+    <a class="btn home-action" href="/leaderboard.html">
+      <span class="home-action-icon">🏆</span>
+      <span>
+        <span class="home-action-title">Leaderboard</span>
+        <span class="home-action-sub">Beste Spieler ansehen</span>
+      </span>
+    </a>
+    <button class="btn home-action" onclick="openAbout()">
+      <span class="home-action-icon">i</span>
+      <span>
+        <span class="home-action-title">Über uns</span>
+        <span class="home-action-sub">Team kennenlernen</span>
+      </span>
+    </button>
   </div>
 </div>
 
