@@ -15,7 +15,7 @@ cloudinary.config({
 const {
   createRoom, joinRoom, setPlayerImage, allUploaded,
   buildPairs, castVote, allVoted, nextPair, getResults,
-  removePlayer, getRoomBySocket, rooms, normalizeAvatar, getLeaderboard
+  removePlayer, getRoomBySocket, rooms, normalizeAvatar, getLeaderboard, getHistory, resetLeaderboard
 } = require('./gameLogic');
 
 const app    = express();
@@ -31,7 +31,12 @@ app.use(express.json());
 app.use(express.static(PUBLIC));
 
 app.get('/api/leaderboard', (req, res) => {
-  res.json({ leaderboard: getLeaderboard() });
+  res.json({ leaderboard: getLeaderboard(), history: getHistory() });
+});
+
+app.post('/api/leaderboard/reset', (req, res) => {
+  resetLeaderboard();
+  res.json({ ok: true, leaderboard: [], history: [] });
 });
 
 const storage = multer.diskStorage({
@@ -69,21 +74,22 @@ function publicHost(room) {
 io.on('connection', socket => {
   console.log('+ connected:', socket.id);
 
-  socket.on('create_room', ({ hostName, avatar }) => {
-    const room = createRoom(socket.id, hostName, undefined, avatar);
+  socket.on('create_room', ({ hostName, avatar, playerId }) => {
+    const room = createRoom(socket.id, hostName, undefined, avatar, playerId);
     socket.join(room.code);
     socket.emit('room_created', { code: room.code, hostName, avatar: room.hostAvatar });
   });
 
-  socket.on('host_rejoin', ({ code, hostName, avatar }) => {
+  socket.on('host_rejoin', ({ code, hostName, avatar, playerId }) => {
     let room = rooms.get(code);
     if (!room) {
-      room = createRoom(socket.id, hostName, code, avatar);
+      room = createRoom(socket.id, hostName, code, avatar, playerId);
       socket.join(room.code);
       socket.emit('host_rejoined', { code: room.code, avatar: room.hostAvatar });
     } else {
       room.host = socket.id;
       room.hostAvatar = normalizeAvatar(avatar || room.hostAvatar);
+      room.hostPlayerId = playerId || room.hostPlayerId;
       socket.join(code);
       socket.emit('host_rejoined', { code, avatar: room.hostAvatar });
       // Wenn Battle läuft → Seite weiterleiten
@@ -101,9 +107,9 @@ io.on('connection', socket => {
     }
   });
 
-  socket.on('join_room', ({ code, playerName, avatar }) => {
+  socket.on('join_room', ({ code, playerName, avatar, playerId }) => {
     if (!code || !playerName) return;
-    const result = joinRoom(code, playerName, socket.id, avatar);
+    const result = joinRoom(code, playerName, socket.id, avatar, playerId);
     if (result.error) { socket.emit('error', result.error); return; }
     const room = result.room;
     socket.join(room.code);
@@ -140,15 +146,18 @@ io.on('connection', socket => {
     io.to(code).emit('phase_upload');
   });
 
-  socket.on('player_upload', ({ code, imagePath, imageDesc, playerName, avatar }) => {
+  socket.on('player_upload', ({ code, imagePath, imageDesc, playerName, avatar, playerId }) => {
     const room = rooms.get(code);
     if (!room) return;
     let player = room.players.find(p => p.socketId === socket.id);
+    if (!player && playerId) player = room.players.find(p => p.playerId === playerId);
     if (!player) player = room.players.find(p => p.name === playerName);
     if (!player) {
-      player = { id: socket.id, name: playerName || room.hostName, avatar: normalizeAvatar(avatar || room.hostAvatar), imagePath: null, imageDesc: '', socketId: socket.id };
+      player = { id: socket.id, playerId: playerId || room.hostPlayerId || socket.id, name: playerName || room.hostName, avatar: normalizeAvatar(avatar || room.hostAvatar), imagePath: null, imageDesc: '', socketId: socket.id };
       room.players.push(player);
     }
+    player.playerId = playerId || player.playerId || socket.id;
+    player.name = playerName || player.name;
     player.avatar = normalizeAvatar(avatar || player.avatar);
     player.imagePath = imagePath;
     player.imageDesc = imageDesc;
@@ -163,6 +172,11 @@ io.on('connection', socket => {
     const room = rooms.get(code);
     if (!room) { socket.emit('error', 'Room nicht gefunden'); return; }
     buildPairs(room);
+    if (!room.pairs.length) {
+      room.state = 'results';
+      io.to(code).emit('show_results', { results: getResults(room) });
+      return;
+    }
     room.state = 'battle';
     // Alle Spieler zur Battle-Seite schicken
     io.to(code).emit('phase_battle');
@@ -182,10 +196,10 @@ io.on('connection', socket => {
     });
   });
 
-  socket.on('vote', ({ code, winnerName }) => {
+  socket.on('vote', ({ code, winnerId, winnerName }) => {
     const room = rooms.get(code);
     if (!room || room.state !== 'battle') return;
-    const ok = castVote(room, socket.id, winnerName);
+    const ok = castVote(room, socket.id, winnerId, winnerName);
     if (!ok) return;
     io.to(code).emit('vote_update', { votedCount: room.votedThisRound.size, total: room.voterCount });
     if (allVoted(room)) {

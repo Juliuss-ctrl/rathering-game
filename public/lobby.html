@@ -55,7 +55,7 @@
 <script src="shared.js"></script>
 <script>
   initStarfield(); initThemeToggle();
-  const role=Session.get('role'); let code=Session.get('code'); const name=Session.get('name'), avatar=Session.get('avatar')||'🙂';
+  const role=Session.get('role'); let code=Session.get('code'); const name=Session.get('name'), avatar=Session.get('avatar')||'🙂', playerId=Session.get('playerId')||getPlayerId();
   if(!code||!role||!name) window.location.href='/';
   document.getElementById('room-code').textContent = code;
   if(role==='host') { document.getElementById('btn-start').style.display='flex'; document.getElementById('waiting-msg').style.display='none'; }
@@ -73,7 +73,7 @@
   setTimeout(() => generateQR(code), 400);
 
   const socket = io();
-  socket.on('connect', () => { if(role==='host') socket.emit('host_rejoin',{code,hostName:name,avatar}); else socket.emit('join_room',{code,playerName:name,avatar}); });
+  socket.on('connect', () => { if(role==='host') socket.emit('host_rejoin',{code,hostName:name,avatar,playerId}); else socket.emit('join_room',{code,playerName:name,avatar,playerId}); });
   socket.on('host_rejoined', ({code:c, avatar:a}) => {
     code=c; Session.set('code',c);
     if(a) Session.set('avatar',a);

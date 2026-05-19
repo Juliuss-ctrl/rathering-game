@@ -94,13 +94,13 @@
 <script src="shared.js"></script>
 <script>
   initStarfield(); initThemeToggle();
-  const role=Session.get('role'), code=Session.get('code'), name=Session.get('name'), avatar=Session.get('avatar')||'🙂';
+  const role=Session.get('role'), code=Session.get('code'), name=Session.get('name'), avatar=Session.get('avatar')||'🙂', playerId=Session.get('playerId')||getPlayerId();
   if(!code) window.location.href='/';
   document.getElementById('code-label').textContent=code;
   const socket=io();
   socket.on('connect',()=>{
-    if(role==='host') socket.emit('host_rejoin',{code,hostName:name,avatar});
-    else socket.emit('join_room',{code,playerName:name,avatar});
+    if(role==='host') socket.emit('host_rejoin',{code,hostName:name,avatar,playerId});
+    else socket.emit('join_room',{code,playerName:name,avatar,playerId});
     setTimeout(()=>socket.emit('request_current_pair',{code}),1500);
   });
   let hasVoted=false, currentLeft=null, currentRight=null;
@@ -129,7 +129,7 @@
     hasVoted=true;soundVote();
     document.getElementById('card-'+side).classList.add('voted');
     document.getElementById('vote-status').textContent=`✓ ${winner.name} gewählt`;
-    socket.emit('vote',{code,winnerName:winner.name});
+    socket.emit('vote',{code,winnerId:winner.playerId,winnerName:winner.name});
   }
   socket.on('vote_update',({votedCount,total})=>{document.getElementById('vote-status').textContent=`${votedCount} / ${total} haben abgestimmt`;});
   socket.on('show_results',({results})=>{Session.set('results',results);window.location.href='/results.html';});

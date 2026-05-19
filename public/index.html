@@ -37,6 +37,13 @@
     .home-action-icon { width:36px; height:36px; border-radius:12px; display:flex; align-items:center; justify-content:center; background:rgba(99,102,241,0.14); color:#fff; font-size:1.2rem; flex-shrink:0; }
     .home-action-title { display:block; font-weight:700; line-height:1.1; }
     .home-action-sub { display:block; margin-top:3px; font-size:0.72rem; color:var(--text2); font-weight:500; }
+    .champion-card { display:none; width:100%; align-items:center; gap:14px; border:1px solid rgba(245,158,11,0.24); background:linear-gradient(135deg,rgba(245,158,11,0.12),var(--surface)); border-radius:18px; padding:14px 16px; box-shadow:0 16px 36px rgba(0,0,0,0.2); }
+    .champion-card.show { display:flex; }
+    .champion-avatar { width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; background:var(--surface2); border:1px solid var(--border2); font-size:1.35rem; object-fit:cover; flex-shrink:0; }
+    .champion-label { font-size:0.68rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--gold); }
+    .champion-name { font-weight:800; color:var(--text); line-height:1.15; }
+    .champion-points { margin-left:auto; font-family:var(--font-head); font-size:1.45rem; font-weight:700; color:var(--text); text-align:right; }
+    .champion-points span { display:block; font-family:var(--font); font-size:0.64rem; color:var(--text3); letter-spacing:0.08em; text-transform:uppercase; }
     .code-input { text-align:center; letter-spacing:0.16em; font-weight:600; font-size:1.05rem; text-transform:uppercase; }
     #about-overlay { display:none; position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,0.75); backdrop-filter:blur(10px); align-items:center; justify-content:center; padding:20px; }
     #about-box { background:var(--surface); border:1px solid var(--border2); border-radius:var(--r2); padding:48px; max-width:780px; width:100%; max-height:92vh; overflow-y:auto; position:relative; box-shadow:0 40px 80px rgba(0,0,0,0.6); animation:modal-in 0.3s cubic-bezier(0.34,1.56,0.64,1); }
@@ -179,6 +186,8 @@
     <div class="step-item"><div class="step-num">3</div><div class="step-text">Abstimmen — wer gewinnt?</div></div>
   </div>
 
+  <div class="champion-card fade-in" id="champion-card" style="animation-delay:0.23s;"></div>
+
   <div style="display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;" class="fade-in">
     <span class="footer-text">GIG — Gewinnen ist Geil</span>
   </div>
@@ -207,6 +216,7 @@
 <script>
   initStarfield();
   initThemeToggle();
+  loadChampion();
 const urlParams = new URLSearchParams(window.location.search);
 const joinCode = urlParams.get('join');
 if (joinCode) {
@@ -241,18 +251,18 @@ if (joinCode) {
   function createGame() {
     const name = document.getElementById('host-name').value.trim();
     if (!name) { showToast('⚠️ Namen eingeben'); return; }
-    socket.emit('create_room', { hostName: name, avatar: selectedAvatars.host });
+    socket.emit('create_room', { hostName: name, avatar: selectedAvatars.host, playerId: getPlayerId() });
   }
   function joinGame() {
     const code = document.getElementById('join-code').value.trim().toUpperCase();
     const name = document.getElementById('join-name').value.trim();
     if (!code || code.length < 4) { showToast('⚠️ Code eingeben'); return; }
     if (!name) { showToast('⚠️ Namen eingeben'); return; }
-    socket.emit('join_room', { code, playerName: name, avatar: selectedAvatars.join });
+    socket.emit('join_room', { code, playerName: name, avatar: selectedAvatars.join, playerId: getPlayerId() });
   }
 
-  socket.on('room_created', ({code, hostName, avatar}) => { Session.set('role','host'); Session.set('code',code); Session.set('name',hostName); Session.set('avatar',avatar); window.location.href='/lobby.html'; });
-  socket.on('joined_room', ({code, playerName, avatar}) => { Session.set('role','player'); Session.set('code',code); Session.set('name',playerName); Session.set('avatar',avatar); window.location.href='/lobby.html'; });
+  socket.on('room_created', ({code, hostName, avatar}) => { Session.set('role','host'); Session.set('code',code); Session.set('name',hostName); Session.set('avatar',avatar); Session.set('playerId',getPlayerId()); window.location.href='/lobby.html'; });
+  socket.on('joined_room', ({code, playerName, avatar}) => { Session.set('role','player'); Session.set('code',code); Session.set('name',playerName); Session.set('avatar',avatar); Session.set('playerId',getPlayerId()); window.location.href='/lobby.html'; });
   socket.on('error', msg => showToast('❌ ' + msg));
 
   function openAbout() {
@@ -265,6 +275,26 @@ if (joinCode) {
   }
   document.addEventListener('keydown', e => { if(e.key==='Escape') closeAbout(); });
   document.getElementById('about-overlay').addEventListener('click', e => { if(e.target.id==='about-overlay') closeAbout(); });
+
+  async function loadChampion() {
+    try {
+      const res = await fetch('/api/leaderboard');
+      const data = await res.json();
+      const champ = data.leaderboard && data.leaderboard[0];
+      if (!champ) return;
+      const card = document.getElementById('champion-card');
+      const avatar = champ.imagePath
+        ? `<img class="champion-avatar" src="${escapeAttr(champ.imagePath)}" alt="${escapeAttr(champ.name)}" onerror="this.outerHTML='<div class=\\'champion-avatar\\'>${escapeHtml(champ.avatar || '🙂')}</div>'">`
+        : `<div class="champion-avatar">${escapeHtml(champ.avatar || '🙂')}</div>`;
+      card.innerHTML = `${avatar}<div><div class="champion-label">Aktueller Champion</div><div class="champion-name">${escapeHtml(champ.name)}</div></div><div class="champion-points">${champ.points}<span>Punkte</span></div>`;
+      card.classList.add('show');
+    } catch {}
+  }
+
+  function escapeHtml(value){
+    return String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  }
+  function escapeAttr(value){ return escapeHtml(value); }
 </script>
 </body>
 </html>

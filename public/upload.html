@@ -26,7 +26,7 @@
       <input type="file" id="file-input" accept="image/*" style="display:none" onchange="handleFile(this.files[0])">
       <div style="font-size:2.2rem;margin-bottom:10px;">🖼️</div>
       <div style="font-weight:600;color:var(--text);margin-bottom:4px;">Foto auswählen</div>
-      <div class="sub" style="font-size:0.82rem;">JPG, PNG, GIF — max. 10 MB</div>
+      <div class="sub" style="font-size:0.82rem;">JPG, PNG, GIF — wird quadratisch zugeschnitten</div>
       <img id="preview-img" src="" alt="" style="display:none;max-width:100%;max-height:200px;object-fit:contain;border-radius:10px;margin-top:14px;">
     </div>
 
@@ -54,13 +54,13 @@
 <script src="shared.js"></script>
 <script>
   initStarfield(); initThemeToggle();
-  const role=Session.get('role'), code=Session.get('code'), name=Session.get('name'), avatar=Session.get('avatar')||'🙂';
+  const role=Session.get('role'), code=Session.get('code'), name=Session.get('name'), avatar=Session.get('avatar')||'🙂', playerId=Session.get('playerId')||getPlayerId();
   if(!code) window.location.href='/';
   const socket=io();
 
   socket.on('connect',()=>{
-    if(role==='host') socket.emit('host_rejoin',{code,hostName:name,avatar});
-    else socket.emit('join_room',{code,playerName:name,avatar});
+    if(role==='host') socket.emit('host_rejoin',{code,hostName:name,avatar,playerId});
+    else socket.emit('join_room',{code,playerName:name,avatar,playerId});
     setTimeout(()=>socket.emit('check_state',{code}),500);
   });
 
@@ -81,12 +81,46 @@
   dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))handleFile(f);});
 
   let selectedFile=null;
-  function handleFile(file){
-    if(!file)return;selectedFile=file;
-    const r=new FileReader();
-    r.onload=e=>{const img=document.getElementById('preview-img');img.src=e.target.result;img.style.display='block';};
-    r.readAsDataURL(file);
-    document.getElementById('upload-status').textContent=file.name+' ausgewählt';
+  async function handleFile(file){
+    if(!file)return;
+    document.getElementById('upload-status').textContent='Bild wird vorbereitet...';
+    try {
+      selectedFile=await cropImageFile(file);
+      const img=document.getElementById('preview-img');
+      img.src=URL.createObjectURL(selectedFile);
+      img.style.display='block';
+      document.getElementById('upload-status').textContent=file.name+' ausgewählt und zugeschnitten';
+    } catch(err) {
+      selectedFile=file;
+      const r=new FileReader();
+      r.onload=e=>{const img=document.getElementById('preview-img');img.src=e.target.result;img.style.display='block';};
+      r.readAsDataURL(file);
+      document.getElementById('upload-status').textContent=file.name+' ausgewählt';
+    }
+  }
+
+  function cropImageFile(file){
+    return new Promise((resolve,reject)=>{
+      const img=new Image();
+      const url=URL.createObjectURL(file);
+      img.onload=()=>{
+        const size=Math.min(img.naturalWidth,img.naturalHeight);
+        const sx=(img.naturalWidth-size)/2;
+        const sy=(img.naturalHeight-size)/2;
+        const canvas=document.createElement('canvas');
+        canvas.width=900;
+        canvas.height=900;
+        const ctx=canvas.getContext('2d');
+        ctx.drawImage(img,sx,sy,size,size,0,0,900,900);
+        URL.revokeObjectURL(url);
+        canvas.toBlob(blob=>{
+          if(!blob){reject(new Error('Crop fehlgeschlagen'));return;}
+          resolve(new File([blob], file.name.replace(/\.[^.]+$/, '')+'-crop.jpg', { type:'image/jpeg' }));
+        },'image/jpeg',0.9);
+      };
+      img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Bild konnte nicht gelesen werden'));};
+      img.src=url;
+    });
   }
 
   async function submitUpload(){
@@ -102,7 +136,7 @@
       btn.textContent='✓ Fertig';
       document.getElementById('players-status').style.display='block';
       if(role==='host')document.getElementById('btn-force-start').style.display='flex';
-      socket.emit('player_upload',{code,imagePath:data.path,imageDesc:desc,playerName:name,avatar});
+      socket.emit('player_upload',{code,imagePath:data.path,imageDesc:desc,playerName:name,avatar,playerId});
     }catch(err){
       showToast('❌ '+err.message);btn.disabled=false;btn.textContent='Fertig →';
     }

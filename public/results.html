@@ -9,6 +9,7 @@
     .results-page{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:44px 20px 48px;}
     .results-header{text-align:center;margin-bottom:28px;}
     .winner-spotlight{width:100%;max-width:940px;display:grid;grid-template-columns:minmax(220px,360px) 1fr;gap:24px;align-items:stretch;border:1px solid rgba(245,158,11,0.28);border-radius:28px;background:linear-gradient(145deg,rgba(245,158,11,0.16),rgba(24,24,31,0.96) 42%,rgba(34,34,44,0.92));box-shadow:0 30px 80px rgba(0,0,0,0.42),0 0 70px rgba(245,158,11,0.08);padding:24px;margin-bottom:28px;overflow:hidden;position:relative;}
+    .winner-spotlight{animation:winner-reveal 0.75s cubic-bezier(0.16,1,0.3,1) both;}
     .winner-spotlight::before{content:'';position:absolute;inset:0;border-radius:28px;background:linear-gradient(90deg,rgba(255,255,255,0.08),transparent 38%,rgba(245,158,11,0.08));pointer-events:none;}
     .winner-media{position:relative;min-height:300px;border-radius:22px;background:var(--bg2);border:1px solid var(--border2);overflow:hidden;display:flex;align-items:center;justify-content:center;}
     .winner-media img{width:100%;height:100%;object-fit:cover;}
@@ -34,6 +35,7 @@
     .result-pct{font-size:0.7rem;color:var(--text3);text-align:right;margin-top:3px;}
     .rank-points{font-size:0.72rem;font-weight:700;color:var(--gold);border:1px solid rgba(245,158,11,0.26);background:rgba(245,158,11,0.08);border-radius:50px;padding:4px 9px;}
     .actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
+    @keyframes winner-reveal{from{opacity:0;transform:translateY(28px) scale(0.96);filter:blur(8px);}to{opacity:1;transform:none;filter:none;}}
     @media(max-width:760px){
       .winner-spotlight{grid-template-columns:1fr;padding:16px;border-radius:22px;}
       .winner-media{min-height:260px;}
@@ -71,11 +73,11 @@
 <script>
   initStarfield();
   initThemeToggle();
-  const role=Session.get('role'),code=Session.get('code'),name=Session.get('name'),avatar=Session.get('avatar')||'🙂';
+  const role=Session.get('role'),code=Session.get('code'),name=Session.get('name'),avatar=Session.get('avatar')||'🙂',playerId=Session.get('playerId')||getPlayerId();
   const socket=io();
  socket.on('connect', () => {
-  if (role==='host') socket.emit('host_rejoin',{code,hostName:name,avatar});
-  else socket.emit('join_room',{code,playerName:name,avatar});
+  if (role==='host') socket.emit('host_rejoin',{code,hostName:name,avatar,playerId});
+  else socket.emit('join_room',{code,playerName:name,avatar,playerId});
  });
   soundResult();
   const saved=Session.get('results');if(saved)renderResults(saved);

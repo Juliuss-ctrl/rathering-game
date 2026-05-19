@@ -93,6 +93,16 @@ const Session = {
   clear: () => sessionStorage.clear(),
 };
 
+function getPlayerId() {
+  let id = localStorage.getItem('ratheringPlayerId');
+  if (!id) {
+    const random = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    id = `player:${random}`;
+    localStorage.setItem('ratheringPlayerId', id);
+  }
+  return id;
+}
+
 // ── Sound ─────────────────────────────────
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let _actx = null;
