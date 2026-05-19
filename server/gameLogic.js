@@ -1,4 +1,9 @@
 const rooms = new Map();
+const DEFAULT_AVATAR = '🙂';
+
+function normalizeAvatar(avatar) {
+  return typeof avatar === 'string' && avatar.trim() ? avatar.trim().slice(0, 4) : DEFAULT_AVATAR;
+}
 
 function generateCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -7,10 +12,10 @@ function generateCode() {
   return rooms.has(code) ? generateCode() : code;
 }
 
-function createRoom(hostSocketId, hostName, forceCode) {
+function createRoom(hostSocketId, hostName, forceCode, hostAvatar) {
   const code = forceCode || generateCode();
   const room = {
-    code, host: hostSocketId, hostName,
+    code, host: hostSocketId, hostName, hostAvatar: normalizeAvatar(hostAvatar),
     players: [],
     state: 'lobby',
     pairs: [], currentPair: 0,
@@ -22,7 +27,7 @@ function createRoom(hostSocketId, hostName, forceCode) {
   return room;
 }
 
-function joinRoom(code, playerName, socketId) {
+function joinRoom(code, playerName, socketId, avatar) {
   const room = rooms.get(code.toUpperCase());
   if (!room) return { error: 'Room nicht gefunden' };
 
@@ -32,12 +37,13 @@ function joinRoom(code, playerName, socketId) {
     existing._oldSocketId = existing.socketId;
     existing.socketId = socketId;
     existing.id = socketId;
+    existing.avatar = normalizeAvatar(avatar || existing.avatar);
     return { room, player: existing };
   }
 
   // Neuer Spieler — nur in Lobby erlaubt
   if (room.state === 'lobby') {
-    const player = { id: socketId, name: playerName, imagePath: null, imageDesc: '', socketId };
+    const player = { id: socketId, name: playerName, avatar: normalizeAvatar(avatar), imagePath: null, imageDesc: '', socketId };
     room.players.push(player);
     return { room, player };
   }
@@ -47,14 +53,15 @@ function joinRoom(code, playerName, socketId) {
   return { room, player: null, spectator: true };
 }
 
-function setPlayerImage(code, socketId, imagePath, imageDesc) {
+function setPlayerImage(code, socketId, imagePath, imageDesc, avatar) {
   const room = rooms.get(code);
   if (!room) return null;
   let player = room.players.find(p => p.socketId === socketId);
   if (!player) {
-    player = { id: socketId, name: room.hostName, imagePath: null, imageDesc: '', socketId };
+    player = { id: socketId, name: room.hostName, avatar: normalizeAvatar(avatar || room.hostAvatar), imagePath: null, imageDesc: '', socketId };
     room.players.push(player);
   }
+  player.avatar = normalizeAvatar(avatar || player.avatar);
   player.imagePath = imagePath;
   player.imageDesc = imageDesc;
   return room;
@@ -68,7 +75,7 @@ function buildPairs(room) {
   // Snapshot der aktiven Spieler beim Battle-Start speichern
   const imgs = room.players
     .filter(p => p.imagePath)
-    .map(p => ({ name: p.name, path: p.imagePath, desc: p.imageDesc }));
+    .map(p => ({ name: p.name, avatar: p.avatar || DEFAULT_AVATAR, path: p.imagePath, desc: p.imageDesc }));
 
   for (let i = imgs.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -119,7 +126,7 @@ function getResults(room) {
     .sort((a, b) => b[1] - a[1])
     .map(([name, votes]) => {
       const player = room.players.find(p => p.name === name);
-      return { name, votes, imagePath: player?.imagePath || '', desc: player?.imageDesc || '' };
+      return { name, votes, avatar: player?.avatar || DEFAULT_AVATAR, imagePath: player?.imagePath || '', desc: player?.imageDesc || '' };
     });
 }
 
@@ -143,5 +150,5 @@ function getRoomBySocket(socketId) {
 module.exports = {
   createRoom, joinRoom, setPlayerImage, allUploaded,
   buildPairs, castVote, allVoted, nextPair, getResults,
-  removePlayer, getRoomBySocket, rooms
+  removePlayer, getRoomBySocket, rooms, normalizeAvatar
 };

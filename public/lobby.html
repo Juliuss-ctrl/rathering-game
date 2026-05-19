@@ -55,7 +55,7 @@
 <script src="shared.js"></script>
 <script>
   initStarfield(); initThemeToggle();
-  const role=Session.get('role'); let code=Session.get('code'); const name=Session.get('name');
+  const role=Session.get('role'); let code=Session.get('code'); const name=Session.get('name'), avatar=Session.get('avatar')||'🙂';
   if(!code||!role||!name) window.location.href='/';
   document.getElementById('room-code').textContent = code;
   if(role==='host') { document.getElementById('btn-start').style.display='flex'; document.getElementById('waiting-msg').style.display='none'; }
@@ -73,16 +73,35 @@
   setTimeout(() => generateQR(code), 400);
 
   const socket = io();
-  socket.on('connect', () => { if(role==='host') socket.emit('host_rejoin',{code,hostName:name}); else socket.emit('join_room',{code,playerName:name}); });
-  socket.on('host_rejoined', ({code:c}) => {
+  socket.on('connect', () => { if(role==='host') socket.emit('host_rejoin',{code,hostName:name,avatar}); else socket.emit('join_room',{code,playerName:name,avatar}); });
+  socket.on('host_rejoined', ({code:c, avatar:a}) => {
     code=c; Session.set('code',c);
+    if(a) Session.set('avatar',a);
     document.getElementById('room-code').textContent=c;
     generateQR(c);
   });
-  socket.on('lobby_update', ({players, hostName}) => {
+  socket.on('lobby_update', ({players, host, hostName}) => {
     const list = document.getElementById('player-list'); list.innerHTML='';
-    const hb = document.createElement('div'); hb.className='host-badge'; hb.innerHTML=`👑 ${hostName}`; list.appendChild(hb);
-    players.forEach(p => { const pill=document.createElement('div'); pill.className='player-pill'+(p.hasImage?' uploaded':''); pill.innerHTML=`<span class="dot"></span>${p.name}${p.hasImage?' ✓':''}`; list.appendChild(pill); });
+    const hb = document.createElement('div');
+    hb.className='host-badge';
+    const hostAvatar=document.createElement('span');
+    hostAvatar.className='avatar-chip';
+    hostAvatar.textContent=host?.avatar||'👑';
+    const hostText=document.createElement('span');
+    hostText.textContent=`${hostName} (Host)`;
+    hb.append(hostAvatar, hostText);
+    list.appendChild(hb);
+    players.forEach(p => {
+      const pill=document.createElement('div');
+      pill.className='player-pill'+(p.hasImage?' uploaded':'');
+      const av=document.createElement('span');
+      av.className='avatar-chip';
+      av.textContent=p.avatar||'🙂';
+      const text=document.createElement('span');
+      text.textContent=`${p.name}${p.hasImage?' ✓':''}`;
+      pill.append(av,text);
+      list.appendChild(pill);
+    });
     document.getElementById('player-count').textContent = `${players.length} Spieler beigetreten`;
   });
   socket.on('phase_upload', () => window.location.href='/upload.html');

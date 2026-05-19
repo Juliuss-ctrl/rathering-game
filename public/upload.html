@@ -54,13 +54,13 @@
 <script src="shared.js"></script>
 <script>
   initStarfield(); initThemeToggle();
-  const role=Session.get('role'), code=Session.get('code'), name=Session.get('name');
+  const role=Session.get('role'), code=Session.get('code'), name=Session.get('name'), avatar=Session.get('avatar')||'🙂';
   if(!code) window.location.href='/';
   const socket=io();
 
   socket.on('connect',()=>{
-    if(role==='host') socket.emit('host_rejoin',{code,hostName:name});
-    else socket.emit('join_room',{code,playerName:name});
+    if(role==='host') socket.emit('host_rejoin',{code,hostName:name,avatar});
+    else socket.emit('join_room',{code,playerName:name,avatar});
     setTimeout(()=>socket.emit('check_state',{code}),500);
   });
 
@@ -102,7 +102,7 @@
       btn.textContent='✓ Fertig';
       document.getElementById('players-status').style.display='block';
       if(role==='host')document.getElementById('btn-force-start').style.display='flex';
-      socket.emit('player_upload',{code,imagePath:data.path,imageDesc:desc,playerName:name});
+      socket.emit('player_upload',{code,imagePath:data.path,imageDesc:desc,playerName:name,avatar});
     }catch(err){
       showToast('❌ '+err.message);btn.disabled=false;btn.textContent='Fertig →';
     }
@@ -113,7 +113,12 @@
     players.forEach(p=>{
       const pill=document.createElement('div');
       pill.className='player-pill'+(p.hasImage?' uploaded':'');
-      pill.innerHTML=`<span class="dot"></span>${p.name}${p.hasImage?' ✓':''}`;
+      const av=document.createElement('span');
+      av.className='avatar-chip';
+      av.textContent=p.avatar||'🙂';
+      const text=document.createElement('span');
+      text.textContent=`${p.name}${p.hasImage?' ✓':''}`;
+      pill.append(av,text);
       w.appendChild(pill);
     });
   });

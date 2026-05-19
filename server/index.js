@@ -15,7 +15,7 @@ cloudinary.config({
 const {
   createRoom, joinRoom, setPlayerImage, allUploaded,
   buildPairs, castVote, allVoted, nextPair, getResults,
-  removePlayer, getRoomBySocket, rooms
+  removePlayer, getRoomBySocket, rooms, normalizeAvatar
 } = require('./gameLogic');
 
 const app    = express();
@@ -54,25 +54,34 @@ app.post('/upload', upload.single('image'), async (req, res) => {
   }
 });
 
+function publicPlayers(room) {
+  return room.players.map(p => ({ name: p.name, avatar: p.avatar, hasImage: !!p.imagePath }));
+}
+
+function publicHost(room) {
+  return { name: room.hostName, avatar: room.hostAvatar };
+}
+
 io.on('connection', socket => {
   console.log('+ connected:', socket.id);
 
-  socket.on('create_room', ({ hostName }) => {
-    const room = createRoom(socket.id, hostName);
+  socket.on('create_room', ({ hostName, avatar }) => {
+    const room = createRoom(socket.id, hostName, undefined, avatar);
     socket.join(room.code);
-    socket.emit('room_created', { code: room.code, hostName });
+    socket.emit('room_created', { code: room.code, hostName, avatar: room.hostAvatar });
   });
 
-  socket.on('host_rejoin', ({ code, hostName }) => {
+  socket.on('host_rejoin', ({ code, hostName, avatar }) => {
     let room = rooms.get(code);
     if (!room) {
-      room = createRoom(socket.id, hostName, code);
+      room = createRoom(socket.id, hostName, code, avatar);
       socket.join(room.code);
-      socket.emit('host_rejoined', { code: room.code });
+      socket.emit('host_rejoined', { code: room.code, avatar: room.hostAvatar });
     } else {
       room.host = socket.id;
+      room.hostAvatar = normalizeAvatar(avatar || room.hostAvatar);
       socket.join(code);
-      socket.emit('host_rejoined', { code });
+      socket.emit('host_rejoined', { code, avatar: room.hostAvatar });
       // Wenn Battle läuft → Seite weiterleiten
       if (room.state === 'battle' && room.pairs.length > 0) {
         socket.emit('phase_battle');
@@ -80,20 +89,21 @@ io.on('connection', socket => {
         socket.emit('phase_upload');
       } else {
         io.to(code).emit('lobby_update', {
-          players: room.players.map(p => ({ name: p.name, hasImage: !!p.imagePath })),
+          players: publicPlayers(room),
+          host: publicHost(room),
           hostName: room.hostName
         });
       }
     }
   });
 
-  socket.on('join_room', ({ code, playerName }) => {
+  socket.on('join_room', ({ code, playerName, avatar }) => {
     if (!code || !playerName) return;
-    const result = joinRoom(code, playerName, socket.id);
+    const result = joinRoom(code, playerName, socket.id, avatar);
     if (result.error) { socket.emit('error', result.error); return; }
     const room = result.room;
     socket.join(room.code);
-    socket.emit('joined_room', { code: room.code, playerName });
+    socket.emit('joined_room', { code: room.code, playerName, avatar: result.player?.avatar || normalizeAvatar(avatar) });
 
     // Alte socket.id aus votedThisRound entfernen
     const oldPlayer = result.player;
@@ -107,11 +117,12 @@ io.on('connection', socket => {
     } else if (room.state === 'upload') {
       socket.emit('phase_upload');
       io.to(room.code).emit('upload_update', {
-        players: room.players.map(p => ({ name: p.name, hasImage: !!p.imagePath }))
+        players: publicPlayers(room)
       });
     } else {
       io.to(room.code).emit('lobby_update', {
-        players: room.players.map(p => ({ name: p.name, hasImage: !!p.imagePath })),
+        players: publicPlayers(room),
+        host: publicHost(room),
         hostName: room.hostName
       });
     }
@@ -125,18 +136,19 @@ io.on('connection', socket => {
     io.to(code).emit('phase_upload');
   });
 
-  socket.on('player_upload', ({ code, imagePath, imageDesc, playerName }) => {
+  socket.on('player_upload', ({ code, imagePath, imageDesc, playerName, avatar }) => {
     const room = rooms.get(code);
     if (!room) return;
     let player = room.players.find(p => p.socketId === socket.id);
     if (!player) player = room.players.find(p => p.name === playerName);
     if (!player) {
-      player = { id: socket.id, name: playerName || room.hostName, imagePath: null, imageDesc: '', socketId: socket.id };
+      player = { id: socket.id, name: playerName || room.hostName, avatar: normalizeAvatar(avatar || room.hostAvatar), imagePath: null, imageDesc: '', socketId: socket.id };
       room.players.push(player);
     }
+    player.avatar = normalizeAvatar(avatar || player.avatar);
     player.imagePath = imagePath;
     player.imageDesc = imageDesc;
-    const uploaded = room.players.map(p => ({ name: p.name, hasImage: !!p.imagePath }));
+    const uploaded = publicPlayers(room);
     io.to(code).emit('upload_update', { players: uploaded });
     if (room.players.length > 0 && room.players.every(p => p.imagePath)) {
       io.to(code).emit('all_uploaded');
@@ -197,7 +209,8 @@ io.on('connection', socket => {
     const room = getRoomBySocket(socket.id);
     if (room) {
       io.to(room.code).emit('lobby_update', {
-        players: room.players.map(p => ({ name: p.name, hasImage: !!p.imagePath })),
+        players: publicPlayers(room),
+        host: publicHost(room),
         hostName: room.hostName
       });
     }

@@ -41,11 +41,11 @@
 <script>
   initStarfield();
   initThemeToggle();
-  const role=Session.get('role'),code=Session.get('code'),name=Session.get('name');
+  const role=Session.get('role'),code=Session.get('code'),name=Session.get('name'),avatar=Session.get('avatar')||'🙂';
   const socket=io();
  socket.on('connect', () => {
-  if (role==='host') socket.emit('host_rejoin',{code,hostName:name});
-  else socket.emit('join_room',{code,playerName:name});
+  if (role==='host') socket.emit('host_rejoin',{code,hostName:name,avatar});
+  else socket.emit('join_room',{code,playerName:name,avatar});
  });
   soundResult();
   const saved=Session.get('results');if(saved)renderResults(saved);
@@ -61,8 +61,8 @@
       if(!item)return;
       const origIdx=top3.indexOf(item);
       const el=document.createElement('div');el.className=`podest-item ${classes[origIdx]||''}`;
-      const av=item.imagePath?`<img class="podest-avatar" src="${item.imagePath}" alt="${item.name}" onerror="this.style.display='none'">`:`<div style="width:88px;height:88px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:1.8rem">🙂</div>`;
-      el.innerHTML=`<div class="podest-medal">${medals[origIdx]||origIdx+1}</div>${av}<div class="podest-name">${item.name}</div><div class="podest-votes">${item.votes} Stimme${item.votes!==1?'n':''}</div>${item.desc?`<div class="podest-desc">${item.desc}</div>`:''}`;
+      const av=item.imagePath?`<img class="podest-avatar" src="${item.imagePath}" alt="${item.name}" onerror="this.style.display='none'">`:`<div style="width:88px;height:88px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:1.8rem">${item.avatar||'🙂'}</div>`;
+      el.innerHTML=`<div class="podest-medal">${medals[origIdx]||origIdx+1}</div><div class="avatar-chip" style="width:38px;height:38px;font-size:1.25rem;">${item.avatar||'🙂'}</div>${av}<div class="podest-name">${item.name}</div><div class="podest-votes">${item.votes} Stimme${item.votes!==1?'n':''}</div>${item.desc?`<div class="podest-desc">${item.desc}</div>`:''}`;
       podest.appendChild(el);
     });
     const restList=document.getElementById('rest-list');restList.innerHTML='';
@@ -70,7 +70,7 @@
       const pct=Math.round((item.votes/maxV)*100);
       const row=document.createElement('div');row.className='result-row';row.style.animationDelay=(0.1+i*0.05)+'s';
       const th=item.imagePath?`<img src="${item.imagePath}" style="width:44px;height:44px;object-fit:cover;border-radius:50%;border:1px solid var(--border2);" onerror="this.style.display='none'">`:``;
-      row.innerHTML=`<div class="result-rank">${i+4}</div>${th}<div class="result-info"><div class="result-name">${item.name}</div><div class="result-votes-text">${item.votes} Stimme${item.votes!==1?'n':''}</div></div><div class="result-bar-wrap"><div class="result-bar-track"><div class="result-bar-fill" style="width:${pct}%"></div></div><div class="result-pct">${pct}%</div></div>`;
+      row.innerHTML=`<div class="result-rank">${i+4}</div><div class="avatar-chip">${item.avatar||'🙂'}</div>${th}<div class="result-info"><div class="result-name">${item.name}</div><div class="result-votes-text">${item.votes} Stimme${item.votes!==1?'n':''}</div></div><div class="result-bar-wrap"><div class="result-bar-track"><div class="result-bar-fill" style="width:${pct}%"></div></div><div class="result-pct">${pct}%</div></div>`;
       restList.appendChild(row);
     });
   }

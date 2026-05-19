@@ -106,6 +106,17 @@
         <label class="label">Dein Name</label>
         <input class="input" id="host-name" type="text" placeholder="z.B. Julius" maxlength="20" autocomplete="off">
       </div>
+      <div class="input-group">
+        <label class="label">Dein Avatar</label>
+        <div class="avatar-picker" data-avatar-picker="host">
+          <button class="avatar-option active" type="button" data-avatar="🙂">🙂</button>
+          <button class="avatar-option" type="button" data-avatar="😎">😎</button>
+          <button class="avatar-option" type="button" data-avatar="🔥">🔥</button>
+          <button class="avatar-option" type="button" data-avatar="👑">👑</button>
+          <button class="avatar-option" type="button" data-avatar="🚀">🚀</button>
+          <button class="avatar-option" type="button" data-avatar="🧠">🧠</button>
+        </div>
+      </div>
       <button class="btn btn-primary btn-full" onclick="createGame()">Spiel erstellen →</button>
     </div>
     <div class="panel" id="panel-join">
@@ -116,6 +127,17 @@
       <div class="input-group">
         <label class="label">Dein Name</label>
         <input class="input" id="join-name" type="text" placeholder="z.B. Fabian" maxlength="20" autocomplete="off">
+      </div>
+      <div class="input-group">
+        <label class="label">Dein Avatar</label>
+        <div class="avatar-picker" data-avatar-picker="join">
+          <button class="avatar-option active" type="button" data-avatar="🙂">🙂</button>
+          <button class="avatar-option" type="button" data-avatar="😎">😎</button>
+          <button class="avatar-option" type="button" data-avatar="🔥">🔥</button>
+          <button class="avatar-option" type="button" data-avatar="👑">👑</button>
+          <button class="avatar-option" type="button" data-avatar="🚀">🚀</button>
+          <button class="avatar-option" type="button" data-avatar="🧠">🧠</button>
+        </div>
       </div>
       <button class="btn btn-primary btn-full" onclick="joinGame()">Beitreten →</button>
     </div>
@@ -147,6 +169,17 @@ if (joinCode) {
   document.getElementById('join-name').focus();
 }
   const socket = io();
+  const selectedAvatars = { host: '🙂', join: '🙂' };
+
+  document.querySelectorAll('[data-avatar-picker]').forEach(picker => {
+    const kind = picker.dataset.avatarPicker;
+    picker.addEventListener('click', e => {
+      const btn = e.target.closest('.avatar-option');
+      if (!btn) return;
+      selectedAvatars[kind] = btn.dataset.avatar;
+      picker.querySelectorAll('.avatar-option').forEach(b => b.classList.toggle('active', b === btn));
+    });
+  });
 
   function switchTab(tab) {
     document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active',(i===0)===(tab==='create')));
@@ -162,18 +195,18 @@ if (joinCode) {
   function createGame() {
     const name = document.getElementById('host-name').value.trim();
     if (!name) { showToast('⚠️ Namen eingeben'); return; }
-    socket.emit('create_room', { hostName: name });
+    socket.emit('create_room', { hostName: name, avatar: selectedAvatars.host });
   }
   function joinGame() {
     const code = document.getElementById('join-code').value.trim().toUpperCase();
     const name = document.getElementById('join-name').value.trim();
     if (!code || code.length < 4) { showToast('⚠️ Code eingeben'); return; }
     if (!name) { showToast('⚠️ Namen eingeben'); return; }
-    socket.emit('join_room', { code, playerName: name });
+    socket.emit('join_room', { code, playerName: name, avatar: selectedAvatars.join });
   }
 
-  socket.on('room_created', ({code, hostName}) => { Session.set('role','host'); Session.set('code',code); Session.set('name',hostName); window.location.href='/lobby.html'; });
-  socket.on('joined_room', ({code, playerName}) => { Session.set('role','player'); Session.set('code',code); Session.set('name',playerName); window.location.href='/lobby.html'; });
+  socket.on('room_created', ({code, hostName, avatar}) => { Session.set('role','host'); Session.set('code',code); Session.set('name',hostName); Session.set('avatar',avatar); window.location.href='/lobby.html'; });
+  socket.on('joined_room', ({code, playerName, avatar}) => { Session.set('role','player'); Session.set('code',code); Session.set('name',playerName); Session.set('avatar',avatar); window.location.href='/lobby.html'; });
   socket.on('error', msg => showToast('❌ ' + msg));
 
   function openAbout() {

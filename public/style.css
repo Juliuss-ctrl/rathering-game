@@ -191,6 +191,44 @@ html, body {
 .input::placeholder { color: var(--text3); }
 .input:focus { border-color: var(--accent); background: var(--bg); box-shadow: 0 0 0 4px rgba(99,102,241,0.12); }
 
+/* ── Avatars ── */
+.avatar-picker {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+
+.avatar-option {
+  height: 42px;
+  border: 1.5px solid var(--border2);
+  border-radius: var(--r);
+  background: var(--bg2);
+  color: var(--text);
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.avatar-option:hover,
+.avatar-option.active {
+  border-color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 0 0 4px rgba(99,102,241,0.12);
+}
+
+.avatar-chip {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
 /* ── Tabs ── */
 .tabs {
   display: grid; grid-template-columns: 1fr 1fr;
