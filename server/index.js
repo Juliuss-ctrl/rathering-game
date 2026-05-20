@@ -300,6 +300,9 @@ function showRecapEntry(room) {
     });
     room.recapIndex++;
     setTimeout(() => showRecapEntry(room), 7000); // 7 Sekunden pro Bild
+  } else {
+    room.state = 'results';
+    io.to(room.code).emit('show_results', { results: getResults(room) });
   }
 }
 
