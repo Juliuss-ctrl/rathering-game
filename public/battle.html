@@ -92,6 +92,13 @@
     </div>
   </div>
 
+  <div class="reaction-bar">
+    <button class="reaction-btn" onclick="sendReaction('🔥')">🔥</button>
+    <button class="reaction-btn" onclick="sendReaction('😂')">😂</button>
+    <button class="reaction-btn" onclick="sendReaction('👏')">👏</button>
+    <button class="reaction-btn" onclick="sendReaction('💩')">💩</button>
+  </div>
+
   <div class="battle-footer">
     <div id="vote-status"></div>
     <div class="hint">Klicke auf dein Lieblingsbild</div>
@@ -149,6 +156,22 @@
   });
   socket.on('show_results',({results})=>{Session.set('results',results);window.location.href='/results.html';});
   socket.on('error',msg=>showToast('❌ '+msg));
+
+  socket.on('reaction_received', ({ emoji }) => {
+    const el = document.createElement('div');
+    el.className = 'flying-emoji';
+    el.textContent = emoji;
+    el.style.setProperty('--rx', (Math.random() * 60 - 30) + 'px');
+    el.style.setProperty('--rx-end', (Math.random() * 200 - 100) + 'px');
+    el.style.setProperty('--rot', (Math.random() * 360 - 180) + 'deg');
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+  });
+
+  function sendReaction(emoji) {
+    socket.emit('send_reaction', { code, emoji });
+    soundClick();
+  }
 
   function startTimer(timerEndsAt, roundSeconds){
     clearInterval(timerInterval);

@@ -249,6 +249,11 @@ io.on('connection', socket => {
     io.to(code).emit('phase_upload');
   });
 
+  socket.on('send_reaction', ({ code, emoji }) => {
+    if (!code || !emoji) return;
+    io.to(code).emit('reaction_received', { emoji, id: Math.random().toString(36).slice(2) });
+  });
+
   socket.on('disconnect', () => {
     const room = getRoomBySocket(socket.id);
     if (room) {
