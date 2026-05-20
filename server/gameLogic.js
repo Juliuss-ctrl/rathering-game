@@ -12,7 +12,7 @@ const ROUND_SECONDS = 15;
 loadLeaderboard();
 
 function normalizeAvatar(avatar) {
-  return typeof avatar === 'string' && avatar.trim() ? avatar.trim().slice(0, 4) : DEFAULT_AVATAR;
+  return typeof avatar === 'string' && avatar.trim() ? avatar.trim().slice(0, 80) : DEFAULT_AVATAR;
 }
 
 function normalizePlayerId(playerId, fallback) {

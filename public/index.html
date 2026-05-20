@@ -39,7 +39,7 @@
     .home-action-sub { display:block; margin-top:3px; font-size:0.72rem; color:var(--text2); font-weight:500; }
     .champion-card { display:none; width:100%; align-items:center; gap:14px; border:1px solid rgba(245,158,11,0.24); background:linear-gradient(135deg,rgba(245,158,11,0.12),var(--surface)); border-radius:18px; padding:14px 16px; box-shadow:0 16px 36px rgba(0,0,0,0.2); }
     .champion-card.show { display:flex; }
-    .champion-avatar { width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; background:var(--surface2); border:1px solid var(--border2); font-size:1.35rem; object-fit:cover; flex-shrink:0; }
+    .champion-avatar { width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; background:var(--surface2); border:1px solid var(--border2); font-size:1.35rem; object-fit:cover; flex-shrink:0; overflow:hidden; }
     .champion-label { font-size:0.68rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--gold); }
     .champion-name { font-weight:800; color:var(--text); line-height:1.15; }
     .champion-points { margin-left:auto; font-family:var(--font-head); font-size:1.45rem; font-weight:700; color:var(--text); text-align:right; }
@@ -146,12 +146,12 @@
       <div class="input-group">
         <label class="label">Dein Avatar</label>
         <div class="avatar-picker" data-avatar-picker="host">
-          <button class="avatar-option active" type="button" data-avatar="🙂">🙂</button>
-          <button class="avatar-option" type="button" data-avatar="😎">😎</button>
-          <button class="avatar-option" type="button" data-avatar="🔥">🔥</button>
-          <button class="avatar-option" type="button" data-avatar="👑">👑</button>
-          <button class="avatar-option" type="button" data-avatar="🚀">🚀</button>
-          <button class="avatar-option" type="button" data-avatar="🧠">🧠</button>
+          <button class="avatar-option active" type="button" data-avatar="identicon:aurora" title="Avatar 1"></button>
+          <button class="avatar-option" type="button" data-avatar="identicon:ember" title="Avatar 2"></button>
+          <button class="avatar-option" type="button" data-avatar="identicon:mint" title="Avatar 3"></button>
+          <button class="avatar-option" type="button" data-avatar="identicon:violet" title="Avatar 4"></button>
+          <button class="avatar-option" type="button" data-avatar="identicon:solar" title="Avatar 5"></button>
+          <button class="avatar-option" type="button" data-avatar="identicon:ocean" title="Avatar 6"></button>
         </div>
       </div>
       <button class="btn btn-primary btn-full" onclick="createGame()">Spiel erstellen →</button>
@@ -168,12 +168,12 @@
       <div class="input-group">
         <label class="label">Dein Avatar</label>
         <div class="avatar-picker" data-avatar-picker="join">
-          <button class="avatar-option active" type="button" data-avatar="🙂">🙂</button>
-          <button class="avatar-option" type="button" data-avatar="😎">😎</button>
-          <button class="avatar-option" type="button" data-avatar="🔥">🔥</button>
-          <button class="avatar-option" type="button" data-avatar="👑">👑</button>
-          <button class="avatar-option" type="button" data-avatar="🚀">🚀</button>
-          <button class="avatar-option" type="button" data-avatar="🧠">🧠</button>
+          <button class="avatar-option active" type="button" data-avatar="identicon:aurora" title="Avatar 1"></button>
+          <button class="avatar-option" type="button" data-avatar="identicon:ember" title="Avatar 2"></button>
+          <button class="avatar-option" type="button" data-avatar="identicon:mint" title="Avatar 3"></button>
+          <button class="avatar-option" type="button" data-avatar="identicon:violet" title="Avatar 4"></button>
+          <button class="avatar-option" type="button" data-avatar="identicon:solar" title="Avatar 5"></button>
+          <button class="avatar-option" type="button" data-avatar="identicon:ocean" title="Avatar 6"></button>
         </div>
       </div>
       <button class="btn btn-primary btn-full" onclick="joinGame()">Beitreten →</button>
@@ -216,6 +216,7 @@
 <script>
   initStarfield();
   initThemeToggle();
+  initAvatarPickerOptions();
   loadChampion();
 const urlParams = new URLSearchParams(window.location.search);
 const joinCode = urlParams.get('join');
@@ -225,7 +226,7 @@ if (joinCode) {
   document.getElementById('join-name').focus();
 }
   const socket = io();
-  const selectedAvatars = { host: '🙂', join: '🙂' };
+  const selectedAvatars = { host: 'identicon:aurora', join: 'identicon:aurora' };
 
   document.querySelectorAll('[data-avatar-picker]').forEach(picker => {
     const kind = picker.dataset.avatarPicker;
@@ -285,7 +286,7 @@ if (joinCode) {
       const card = document.getElementById('champion-card');
       const avatar = champ.imagePath
         ? `<img class="champion-avatar" src="${escapeAttr(champ.imagePath)}" alt="${escapeAttr(champ.name)}" onerror="this.outerHTML='<div class=\\'champion-avatar\\'>${escapeHtml(champ.avatar || '🙂')}</div>'">`
-        : `<div class="champion-avatar">${escapeHtml(champ.avatar || '🙂')}</div>`;
+        : `<div class="champion-avatar">${avatarHtml(champ.avatar || '🙂')}</div>`;
       card.innerHTML = `${avatar}<div><div class="champion-label">Aktueller Champion</div><div class="champion-name">${escapeHtml(champ.name)}</div></div><div class="champion-points">${champ.points}<span>Punkte</span></div>`;
       card.classList.add('show');
     } catch {}

@@ -103,6 +103,65 @@ function getPlayerId() {
   return id;
 }
 
+// ── Avatars ───────────────────────────────
+function escapeAvatarHtml(value) {
+  return String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+function hashAvatarSeed(seed) {
+  let hash = 2166136261;
+  for (let i = 0; i < seed.length; i++) {
+    hash ^= seed.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function isIdenticonAvatar(avatar) {
+  return typeof avatar === 'string' && avatar.startsWith('identicon:');
+}
+
+function identiconSvg(avatar) {
+  const seed = avatar || 'identicon:default';
+  const hash = hashAvatarSeed(seed);
+  const hue = hash % 360;
+  const accent = `hsl(${hue} 78% 58%)`;
+  const accent2 = `hsl(${(hue + 42) % 360} 72% 46%)`;
+  const dark = `hsl(${(hue + 210) % 360} 34% 18%)`;
+  const cells = [];
+
+  for (let y = 0; y < 5; y++) {
+    for (let x = 0; x < 3; x++) {
+      const bit = (hash >> ((x + y * 3) % 24)) & 1;
+      if (!bit) continue;
+      const color = ((x + y) % 3 === 0) ? accent2 : accent;
+      cells.push(`<rect x="${x}" y="${y}" width="1" height="1" fill="${color}"/>`);
+      if (x !== 2) cells.push(`<rect x="${4 - x}" y="${y}" width="1" height="1" fill="${color}"/>`);
+    }
+  }
+
+  return `<svg class="identicon-svg" viewBox="0 0 5 5" aria-hidden="true" focusable="false">
+    <rect width="5" height="5" rx="1" fill="${dark}"/>
+    ${cells.join('')}
+  </svg>`;
+}
+
+function avatarHtml(avatar, fallback = '🙂') {
+  if (isIdenticonAvatar(avatar)) return identiconSvg(avatar);
+  return escapeAvatarHtml(avatar || fallback);
+}
+
+function renderAvatarElement(element, avatar, fallback = '🙂') {
+  if (!element) return;
+  element.innerHTML = avatarHtml(avatar, fallback);
+}
+
+function initAvatarPickerOptions() {
+  document.querySelectorAll('.avatar-option[data-avatar]').forEach(button => {
+    renderAvatarElement(button, button.dataset.avatar);
+  });
+}
+
 // ── Sound ─────────────────────────────────
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let _actx = null;

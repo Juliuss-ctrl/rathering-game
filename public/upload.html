@@ -149,7 +149,7 @@
       pill.className='player-pill'+(p.hasImage?' uploaded':'');
       const av=document.createElement('span');
       av.className='avatar-chip';
-      av.textContent=p.avatar||'🙂';
+      renderAvatarElement(av, p.avatar);
       const text=document.createElement('span');
       text.textContent=`${p.name}${p.hasImage?' ✓':''}`;
       pill.append(av,text);

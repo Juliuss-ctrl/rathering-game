@@ -86,7 +86,7 @@
     hb.className='host-badge';
     const hostAvatar=document.createElement('span');
     hostAvatar.className='avatar-chip';
-    hostAvatar.textContent=host?.avatar||'👑';
+    renderAvatarElement(hostAvatar, host?.avatar, '👑');
     const hostText=document.createElement('span');
     hostText.textContent=`${hostName} (Host)`;
     hb.append(hostAvatar, hostText);
@@ -96,7 +96,7 @@
       pill.className='player-pill'+(p.hasImage?' uploaded':'');
       const av=document.createElement('span');
       av.className='avatar-chip';
-      av.textContent=p.avatar||'🙂';
+      renderAvatarElement(av, p.avatar);
       const text=document.createElement('span');
       text.textContent=`${p.name}${p.hasImage?' ✓':''}`;
       pill.append(av,text);

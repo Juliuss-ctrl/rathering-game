@@ -13,7 +13,7 @@
     .winner-spotlight::before{content:'';position:absolute;inset:0;border-radius:28px;background:linear-gradient(90deg,rgba(255,255,255,0.08),transparent 38%,rgba(245,158,11,0.08));pointer-events:none;}
     .winner-media{position:relative;min-height:300px;border-radius:22px;background:var(--bg2);border:1px solid var(--border2);overflow:hidden;display:flex;align-items:center;justify-content:center;}
     .winner-media img{width:100%;height:100%;object-fit:cover;}
-    .winner-fallback{font-size:5rem;}
+    .winner-fallback{width:140px;height:140px;font-size:5rem;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:28px;}
     .winner-ribbon{position:absolute;top:14px;left:14px;display:inline-flex;align-items:center;gap:8px;border-radius:50px;background:rgba(12,12,14,0.72);border:1px solid rgba(255,255,255,0.18);backdrop-filter:blur(12px);padding:8px 12px;font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#fff;}
     .winner-content{position:relative;display:flex;flex-direction:column;justify-content:space-between;gap:22px;padding:8px 4px;}
     .winner-label{font-size:0.74rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);}
@@ -98,8 +98,8 @@
       if(!item)return;
       const origIdx=top3.indexOf(item);
       const el=document.createElement('div');el.className=`podest-item ${classes[origIdx]||''}`;
-      const av=item.imagePath?`<img class="podest-avatar" src="${escapeAttr(item.imagePath)}" alt="${escapeAttr(item.name)}" onerror="this.style.display='none'">`:`<div style="width:88px;height:88px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:1.8rem">${escapeHtml(item.avatar||'🙂')}</div>`;
-      el.innerHTML=`<div class="podest-medal">${medals[origIdx]||origIdx+1}</div><div class="avatar-chip" style="width:38px;height:38px;font-size:1.25rem;">${escapeHtml(item.avatar||'🙂')}</div>${av}<div class="podest-name">${escapeHtml(item.name)}</div><div class="podest-votes">${item.votes} Stimme${item.votes!==1?'n':''}</div><div class="rank-points">+${rankPoints[origIdx]||0} Punkte</div>${item.desc?`<div class="podest-desc">${escapeHtml(item.desc)}</div>`:''}`;
+      const av=item.imagePath?`<img class="podest-avatar" src="${escapeAttr(item.imagePath)}" alt="${escapeAttr(item.name)}" onerror="this.style.display='none'">`:`<div style="width:88px;height:88px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:1.8rem;overflow:hidden">${avatarHtml(item.avatar||'🙂')}</div>`;
+      el.innerHTML=`<div class="podest-medal">${medals[origIdx]||origIdx+1}</div><div class="avatar-chip" style="width:38px;height:38px;font-size:1.25rem;">${avatarHtml(item.avatar||'🙂')}</div>${av}<div class="podest-name">${escapeHtml(item.name)}</div><div class="podest-votes">${item.votes} Stimme${item.votes!==1?'n':''}</div><div class="rank-points">+${rankPoints[origIdx]||0} Punkte</div>${item.desc?`<div class="podest-desc">${escapeHtml(item.desc)}</div>`:''}`;
       podest.appendChild(el);
     });
     const restList=document.getElementById('rest-list');restList.innerHTML='';
@@ -108,7 +108,7 @@
       const pct=Math.round((item.votes/maxV)*100);
       const row=document.createElement('div');row.className='result-row';row.style.animationDelay=(0.1+i*0.05)+'s';
       const th=item.imagePath?`<img src="${escapeAttr(item.imagePath)}" style="width:44px;height:44px;object-fit:cover;border-radius:50%;border:1px solid var(--border2);" onerror="this.style.display='none'">`:``;
-      row.innerHTML=`<div class="result-rank">${i+4}</div><div class="avatar-chip">${escapeHtml(item.avatar||'🙂')}</div>${th}<div class="result-info"><div class="result-name">${escapeHtml(item.name)}</div><div class="result-votes-text">${item.votes} Stimme${item.votes!==1?'n':''}</div></div><div class="result-bar-wrap"><div class="result-bar-track"><div class="result-bar-fill" style="width:${pct}%"></div></div><div class="result-pct">${pct}%</div></div>`;
+      row.innerHTML=`<div class="result-rank">${i+4}</div><div class="avatar-chip">${avatarHtml(item.avatar||'🙂')}</div>${th}<div class="result-info"><div class="result-name">${escapeHtml(item.name)}</div><div class="result-votes-text">${item.votes} Stimme${item.votes!==1?'n':''}</div></div><div class="result-bar-wrap"><div class="result-bar-track"><div class="result-bar-fill" style="width:${pct}%"></div></div><div class="result-pct">${pct}%</div></div>`;
       restList.appendChild(row);
     });
   }
@@ -118,7 +118,7 @@
     const pct=Math.round((winner.votes/Math.max(1,totalVotes))*100);
     const media=winner.imagePath
       ? `<img src="${escapeAttr(winner.imagePath)}" alt="${escapeAttr(winner.name)}" onerror="this.outerHTML='<div class=\\'winner-fallback\\'>${escapeHtml(winner.avatar||'🙂')}</div>'">`
-      : `<div class="winner-fallback">${escapeHtml(winner.avatar||'🙂')}</div>`;
+      : `<div class="winner-fallback">${avatarHtml(winner.avatar||'🙂')}</div>`;
     wrap.innerHTML=`
       <div class="winner-spotlight fade-in">
         <div class="winner-media">
