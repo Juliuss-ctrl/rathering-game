@@ -181,8 +181,10 @@ io.on('connection', socket => {
     if (!room) { socket.emit('error', 'Room nicht gefunden'); return; }
     if (room.host !== socket.id) { socket.emit('error', 'Nur der Host kann das Battle starten'); return; }
     if (room.state === 'battle') return;
+    console.log('DEBUG: room players before buildPairs:', room.players.map(p => ({name: p.name, hasImage: !!p.imagePath})));
     buildPairs(room);
     if (!room.pairs.length) {
+      console.log('DEBUG: No pairs built, transitioning to results.');
       room.state = 'results';
       io.to(code).emit('show_results', { results: getResults(room) });
       return;
