@@ -95,6 +95,8 @@ io.on('connection', socket => {
       // Wenn Battle läuft → Seite weiterleiten
       if (room.state === 'battle' && room.pairs.length > 0) {
         socket.emit('phase_battle');
+      } else if (room.state === 'recap') {
+        socket.emit('phase_recap');
       } else if (room.state === 'upload') {
         socket.emit('phase_upload');
       } else if (room.state === 'results') {
@@ -126,6 +128,8 @@ io.on('connection', socket => {
     // Spieler auf richtige Seite schicken je nach State
     if (room.state === 'battle') {
       socket.emit('phase_battle');
+    } else if (room.state === 'recap') {
+      socket.emit('phase_recap');
     } else if (room.state === 'results') {
       socket.emit('show_results', { results: getResults(room) });
     } else if (room.state === 'upload') {
@@ -217,8 +221,7 @@ io.on('connection', socket => {
       if (hasMore) {
         setTimeout(() => startCurrentPair(room), 1200);
       } else {
-        room.state = 'results';
-        io.to(code).emit('show_results', { results: getResults(room) });
+        startRecap(room);
       }
     }
   });
@@ -228,11 +231,23 @@ io.on('connection', socket => {
     if (!room) return;
     if (room.state === 'battle') {
       socket.emit('phase_battle');
+    } else if (room.state === 'recap') {
+      socket.emit('phase_recap');
     } else if (room.state === 'results') {
       socket.emit('show_results', { results: getResults(room) });
     } else if (room.state === 'upload') {
       socket.emit('phase_upload');
     }
+  });
+
+  socket.on('request_recap_status', ({ code }) => {
+    const room = rooms.get(code);
+    if (!room || room.state !== 'recap') return;
+    socket.emit('recap_update', {
+      entry: room.battlePlayers[room.recapIndex],
+      index: room.recapIndex,
+      total: room.battlePlayers.length
+    });
   });
 
   socket.on('rematch', ({ code }) => {
@@ -267,6 +282,30 @@ io.on('connection', socket => {
   });
 });
 
+function startRecap(room) {
+  room.state = 'recap';
+  room.recapIndex = 0;
+  io.to(room.code).emit('phase_recap');
+  setTimeout(() => showRecapEntry(room), 2000);
+}
+
+function showRecapEntry(room) {
+  if (!room || room.state !== 'recap') return;
+  if (room.recapIndex < room.battlePlayers.length) {
+    const entry = room.battlePlayers[room.recapIndex];
+    io.to(room.code).emit('recap_update', {
+      entry,
+      index: room.recapIndex,
+      total: room.battlePlayers.length
+    });
+    room.recapIndex++;
+    setTimeout(() => showRecapEntry(room), 7000); // 7 Sekunden pro Bild
+  } else {
+    room.state = 'results';
+    io.to(room.code).emit('show_results', { results: getResults(room) });
+  }
+}
+
 function sendCurrentPair(room) {
   const pair = room.pairs[room.currentPair];
   io.to(room.code).emit('new_pair', {
@@ -292,8 +331,7 @@ function startCurrentPair(room) {
     if (hasMore) {
       setTimeout(() => startCurrentPair(room), 1200);
     } else {
-      room.state = 'results';
-      io.to(room.code).emit('show_results', { results: getResults(room) });
+      startRecap(room);
     }
   }, room.roundSeconds * 1000);
 }
