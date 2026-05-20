@@ -155,6 +155,9 @@
     document.getElementById('timer-pill').classList.add('danger');
   });
   socket.on('show_results',({results})=>{Session.set('results',results);window.location.href='/results.html';});
+  socket.on('phase_recap',()=>{
+    window.location.href='/recap.html';
+  });
   socket.on('error',msg=>showToast('❌ '+msg));
 
   socket.on('reaction_received', ({ emoji }) => {
