@@ -171,6 +171,10 @@
   // Alle Wege zum Battle abfangen
   socket.on('phase_battle', goToBattle);
   socket.on('new_pair',     goToBattle);
+  socket.on('show_results', ({results}) => {
+    Session.set('results', results);
+    window.location.href = '/results.html';
+  });
 
   socket.on('error',msg=>showToast('❌ '+msg));
 </script>
