@@ -160,16 +160,21 @@
   });
   socket.on('error',msg=>showToast('❌ '+msg));
 
-  socket.on('reaction_received', ({ emoji }) => {
+  socket.on('reaction_received', ({ emoji, senderName }) => {
     const el = document.createElement('div');
     el.className = 'flying-emoji';
-    el.textContent = emoji;
+    el.innerHTML = `
+      <span class="flying-emoji-text">${emoji}</span>
+      ${senderName ? `<span class="flying-emoji-sender">${escapeHtml(senderName)}</span>` : ''}
+    `;
     el.style.setProperty('--rx', (Math.random() * 60 - 30) + 'px');
     el.style.setProperty('--rx-end', (Math.random() * 200 - 100) + 'px');
     el.style.setProperty('--rot', (Math.random() * 360 - 180) + 'deg');
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 3000);
   });
+
+  function escapeHtml(v) { return String(v).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
 
   function sendReaction(emoji) {
     socket.emit('send_reaction', { code, emoji });

@@ -26,12 +26,20 @@ function generateCode() {
   return rooms.has(code) ? generateCode() : code;
 }
 
+function normalizeName(name) {
+  return typeof name === 'string' ? name.trim().slice(0, 40) : 'Unbekannt';
+}
+
+function normalizeDesc(desc) {
+  return typeof desc === 'string' ? desc.trim().slice(0, 100) : '';
+}
+
 function createRoom(hostSocketId, hostName, forceCode, hostAvatar, hostPlayerId) {
   const code = forceCode || generateCode();
   const room = {
     code,
     host: hostSocketId,
-    hostName,
+    hostName: normalizeName(hostName),
     hostAvatar: normalizeAvatar(hostAvatar),
     hostPlayerId: normalizePlayerId(hostPlayerId, `host:${hostSocketId}`),
     players: [],
@@ -51,6 +59,7 @@ function createRoom(hostSocketId, hostName, forceCode, hostAvatar, hostPlayerId)
     timerId: null,
     // Snapshot der Spieler beim Battle-Start
     battlePlayers: [],
+    detailedVotes: {}, // { pairIndex_bracketRound: { winnerId: [voterPlayerIds] } }
   };
   rooms.set(code, room);
   return room;
@@ -60,24 +69,25 @@ function joinRoom(code, playerName, socketId, avatar, playerId) {
   const room = rooms.get(code.toUpperCase());
   if (!room) return { error: 'Room nicht gefunden' };
   const normalizedPlayerId = normalizePlayerId(playerId, `socket:${socketId}`);
+  const normalizedNameValue = normalizeName(playerName);
 
   // Spieler bereits drin? → nur socket.id updaten, sonst nichts
   const existing = playerId
     ? room.players.find(p => p.playerId === normalizedPlayerId)
-    : room.players.find(p => p.name === playerName);
+    : room.players.find(p => p.name === normalizedNameValue);
   if (existing) {
     existing._oldSocketId = existing.socketId;
     existing.socketId = socketId;
     existing.id = socketId;
     existing.playerId = normalizedPlayerId;
-    existing.name = playerName || existing.name;
+    existing.name = normalizedNameValue || existing.name;
     existing.avatar = normalizeAvatar(avatar || existing.avatar);
     return { room, player: existing };
   }
 
   // Neuer Spieler — nur in Lobby erlaubt
   if (room.state === 'lobby') {
-    const player = { id: socketId, playerId: normalizedPlayerId, name: playerName, avatar: normalizeAvatar(avatar), imagePath: null, imageDesc: '', socketId };
+    const player = { id: socketId, playerId: normalizedPlayerId, name: normalizedNameValue, avatar: normalizeAvatar(avatar), imagePath: null, imageDesc: '', socketId };
     room.players.push(player);
     return { room, player };
   }
@@ -94,14 +104,14 @@ function setPlayerImage(code, socketId, imagePath, imageDesc, avatar, playerName
   const normalizedPlayerId = normalizePlayerId(playerId, room.host === socketId ? room.hostPlayerId : `socket:${socketId}`);
   if (!player) player = room.players.find(p => p.playerId === normalizedPlayerId);
   if (!player) {
-    player = { id: socketId, playerId: normalizedPlayerId, name: playerName || room.hostName, avatar: normalizeAvatar(avatar || room.hostAvatar), imagePath: null, imageDesc: '', socketId };
+    player = { id: socketId, playerId: normalizedPlayerId, name: normalizeName(playerName || room.hostName), avatar: normalizeAvatar(avatar || room.hostAvatar), imagePath: null, imageDesc: '', socketId };
     room.players.push(player);
   }
-  player.name = playerName || player.name;
+  player.name = normalizeName(playerName || player.name);
   player.playerId = normalizedPlayerId;
   player.avatar = normalizeAvatar(avatar || player.avatar);
   player.imagePath = imagePath;
-  player.imageDesc = imageDesc;
+  player.imageDesc = normalizeDesc(imageDesc);
   return room;
 }
 
@@ -119,7 +129,10 @@ function buildPairs(room) {
   room.votes = {};
   room.votedThisRound = new Set();
   room.pairVotes = {};
-  room.voterCount = imgs.length;
+  
+  // Voter count is all players in the room at start of battle
+  room.voterCount = room.players.length;
+  
   room.battlePlayers = imgs;
   room.battleMode = 'tournament';
   room.bracketRound = 1;
@@ -141,6 +154,21 @@ function castVote(room, socketId, winnerId, winnerName) {
   if (room.votes[voteKey] !== undefined) {
     room.votes[voteKey]++;
     room.pairVotes[voteKey] = (room.pairVotes[voteKey] || 0) + 1;
+
+    // Detailed votes tracking
+    const key = `${room.currentPair}_${room.bracketRound}`;
+    if (!room.detailedVotes[key]) room.detailedVotes[key] = {};
+    if (!room.detailedVotes[key][voteKey]) room.detailedVotes[key][voteKey] = [];
+
+    // Find the player ID of the voter
+    const voter = room.players.find(p => p.socketId === socketId);
+    if (voter) {
+      room.detailedVotes[key][voteKey].push({
+        playerId: voter.playerId,
+        name: voter.name,
+        avatar: voter.avatar
+      });
+    }
   }
   console.log(`Vote: ${winnerName || voteKey} | ${room.votedThisRound.size} / ${room.voterCount}`);
   return true;

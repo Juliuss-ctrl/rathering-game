@@ -92,8 +92,7 @@
 
   async function loadLeaderboard() {
     try {
-      const res = await fetch('/api/leaderboard');
-      const data = await res.json();
+      const data = await apiRequest('/api/leaderboard');
       renderPodium(data.leaderboard || []);
       renderLeaderboard(data.leaderboard || []);
       renderHistory(data.history || []);
@@ -118,7 +117,7 @@
       return `
         <div class="podium-card ${classes[rank] || ''}">
           <div class="podium-rank">${medals[rank] || rank + 1}</div>
-          ${entry.imagePath ? `<img class="podium-img" src="${escapeAttr(entry.imagePath)}" alt="${escapeAttr(entry.name)}" onerror="this.outerHTML='<div class=\\'podium-img avatar-chip\\'>${escapeHtml(entry.avatar || '🙂')}</div>'">` : `<div class="podium-img avatar-chip" style="font-size:2rem;">${avatarHtml(entry.avatar || '🙂')}</div>`}
+          ${entry.imagePath ? `<img class="podium-img" src="${escapeHtml(entry.imagePath)}" alt="${escapeHtml(entry.name)}" onerror="this.outerHTML='<div class=\\'podium-img avatar-chip\\'>${avatarHtml(entry.avatar || '🙂')}</div>'">` : `<div class="podium-img avatar-chip" style="font-size:2rem;">${avatarHtml(entry.avatar || '🙂')}</div>`}
           <div class="podium-name">${escapeHtml(entry.name)}</div>
           <div class="podium-points">${entry.points} Punkte · ${entry.wins || 0} Sieg${entry.wins === 1 ? '' : 'e'}</div>
         </div>
@@ -169,15 +168,20 @@
 
   async function resetBoard() {
     if (!confirm('Leaderboard wirklich zurücksetzen?')) return;
-    await fetch('/api/leaderboard/reset', { method: 'POST' });
-    showToast('Leaderboard zurückgesetzt');
-    loadLeaderboard();
-  }
+    const key = prompt('Admin-Key eingeben:');
+    if (!key) return;
 
-  function escapeHtml(value){
-    return String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    try {
+      await apiRequest('/api/leaderboard/reset', {
+        method: 'POST',
+        body: JSON.stringify({ key })
+      });
+      showToast('Leaderboard zurückgesetzt');
+      loadLeaderboard();
+    } catch (err) {
+      showToast('Reset fehlgeschlagen: ' + err.message);
+    }
   }
-  function escapeAttr(value){ return escapeHtml(value); }
 </script>
 </body>
 </html>

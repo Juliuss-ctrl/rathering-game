@@ -1,3 +1,35 @@
+// ── Utilities ─────────────────────────────
+function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value).replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[ch]));
+}
+
+async function apiRequest(url, options = {}) {
+  try {
+    const res = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+      }
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    return await res.json();
+  } catch (err) {
+    console.error(`API Error (${url}):`, err);
+    throw err;
+  }
+}
+
 function initStarfield() {
   const canvas = document.getElementById('bg-canvas');
   if (!canvas) return;

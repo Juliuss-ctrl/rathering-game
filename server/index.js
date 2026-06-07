@@ -30,11 +30,17 @@ if (!fs.existsSync(UPLOADS)) fs.mkdirSync(UPLOADS, { recursive: true });
 app.use(express.json());
 app.use(express.static(PUBLIC));
 
+const ADMIN_KEY = process.env.ADMIN_KEY || 'admin123';
+
 app.get('/api/leaderboard', (req, res) => {
   res.json({ leaderboard: getLeaderboard(), history: getHistory() });
 });
 
 app.post('/api/leaderboard/reset', (req, res) => {
+  const { key } = req.body;
+  if (key !== ADMIN_KEY) {
+    return res.status(401).json({ error: 'Ungültiger Admin-Key' });
+  }
   resetLeaderboard();
   res.json({ ok: true, leaderboard: [], history: [] });
 });
@@ -268,7 +274,32 @@ io.on('connection', socket => {
 
   socket.on('send_reaction', ({ code, emoji }) => {
     if (!code || !emoji) return;
-    io.to(code).emit('reaction_received', { emoji, id: Math.random().toString(36).slice(2) });
+    const room = rooms.get(code);
+    let sender = null;
+    if (room) {
+      sender = room.players.find(p => p.socketId === socket.id) || (room.host === socket.id ? { name: room.hostName, avatar: room.hostAvatar } : null);
+    }
+    io.to(code).emit('reaction_received', { 
+      emoji, 
+      id: Math.random().toString(36).slice(2),
+      senderName: sender?.name,
+      senderAvatar: sender?.avatar
+    });
+  });
+
+  socket.on('send_chat', ({ code, message }) => {
+    if (!code || !message || !message.trim()) return;
+    const room = rooms.get(code);
+    if (!room) return;
+    const player = room.players.find(p => p.socketId === socket.id) || (room.host === socket.id ? { name: room.hostName, avatar: room.hostAvatar } : null);
+    if (!player) return;
+    
+    io.to(code).emit('chat_message', {
+      name: player.name,
+      avatar: player.avatar,
+      message: message.trim().slice(0, 200),
+      id: Date.now() + Math.random().toString(36).slice(2)
+    });
   });
 
   socket.on('disconnect', () => {
@@ -295,10 +326,23 @@ function showRecapEntry(room) {
   if (!room || room.state !== 'recap') return;
   if (room.recapIndex < room.battlePlayers.length) {
     const entry = room.battlePlayers[room.recapIndex];
+    
+    // Find all voters who voted for this entry across all rounds
+    const votersMap = new Map(); // Use Map to avoid duplicates if someone voted for them multiple times (tournament)
+    Object.values(room.detailedVotes).forEach(roundVotes => {
+      if (roundVotes[entry.playerId]) {
+        roundVotes[entry.playerId].forEach(v => {
+          votersMap.set(v.playerId, v);
+        });
+      }
+    });
+    const voters = Array.from(votersMap.values());
+
     io.to(room.code).emit('recap_update', {
       entry,
       index: room.recapIndex,
-      total: room.battlePlayers.length
+      total: room.battlePlayers.length,
+      voters
     });
     room.recapIndex++;
     setTimeout(() => showRecapEntry(room), 7000); // 7 Sekunden pro Bild

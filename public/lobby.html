@@ -9,7 +9,7 @@
     .wrap { position:relative;z-index:1;width:100%;max-width:580px;padding:24px;margin:auto;display:flex;flex-direction:column;gap:20px;min-height:100vh;justify-content:center; }
     .code-box { background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r2);padding:32px;text-align:center; }
     .code-hint { font-size:0.72rem;color:var(--text3);margin-top:8px;letter-spacing:0.06em; }
-    .players-card { padding:24px; }
+    .players-card { padding:24px; flex:1; }
     #player-list { display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;min-height:40px; }
     #player-count { font-size:0.75rem;color:var(--text3);margin-top:10px;letter-spacing:0.06em; }
     .actions { display:flex;flex-direction:column;gap:10px; }
@@ -18,6 +18,17 @@
     .qr-wrap { margin-top:16px; display:flex; flex-direction:column; align-items:center; gap:6px; }
     .qr-label { font-size:0.65rem; color:var(--text3); letter-spacing:0.1em; text-transform:uppercase; }
     #qr-img { border-radius:10px; display:none; width:160px; height:160px; }
+    
+    .lobby-content { display:flex; flex-direction:column; gap:20px; }
+    .chat-box { display:flex; flex-direction:column; height:300px; padding:0; overflow:hidden; }
+    .chat-header { padding:14px 18px; border-bottom:1px solid var(--border); font-size:0.75rem; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:0.05em; display:flex; align-items:center; gap:8px; }
+    .chat-messages { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; scrollbar-width: thin; }
+    .chat-input-wrap { padding:12px; border-top:1px solid var(--border); display:flex; gap:8px; }
+    .chat-msg { display:flex; gap:10px; animation: msg-in 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.28); }
+    @keyframes msg-in { from { opacity:0; transform: translateY(10px) scale(0.95); } to { opacity:1; transform: none; } }
+    .chat-msg-avatar { width:32px; height:32px; border-radius:10px; background:var(--surface2); border:1px solid var(--border2); display:flex; align-items:center; justify-content:center; font-size:1rem; flex-shrink:0; }
+    .chat-msg-content { background:rgba(255,255,255,0.03); border-radius:12px; padding:8px 12px; font-size:0.88rem; color:var(--text); max-width:85%; border:1px solid var(--border); }
+    .chat-msg-name { display:block; font-size:0.68rem; font-weight:700; color:var(--accent); margin-bottom:2px; }
   </style>
 </head>
 <body>
@@ -38,10 +49,23 @@
     </div>
   </div>
 
-  <div class="glass-card players-card fade-in" style="animation-delay:0.15s;">
-    <div class="label">Spieler</div>
-    <div id="player-list"></div>
-    <div id="player-count"></div>
+  <div class="lobby-content fade-in" style="animation-delay:0.15s;">
+    <div class="glass-card players-card">
+      <div class="label">Spieler</div>
+      <div id="player-list"></div>
+      <div id="player-count"></div>
+    </div>
+
+    <div class="glass-card chat-box">
+      <div class="chat-header">💬 Live Chat</div>
+      <div class="chat-messages" id="chat-messages">
+        <div style="color:var(--text3); font-size:0.75rem; text-align:center; margin-top:20px;">Noch keine Nachrichten...</div>
+      </div>
+      <div class="chat-input-wrap">
+        <input class="input" id="chat-input" placeholder="Nachricht..." maxlength="100" autocomplete="off" style="font-size:0.85rem; padding:10px 14px;">
+        <button class="btn btn-primary" onclick="sendChat()" style="padding:0 16px; min-width:auto;">Send</button>
+      </div>
+    </div>
   </div>
 
   <div class="actions fade-in" style="animation-delay:0.2s;">
@@ -104,11 +128,46 @@
     });
     document.getElementById('player-count').textContent = `${players.length} Spieler beigetreten`;
   });
+
+  // Chat logic
+  const chatInput = document.getElementById('chat-input');
+  const chatMessages = document.getElementById('chat-messages');
+
+  function sendChat() {
+    const msg = chatInput.value.trim();
+    if(!msg) return;
+    socket.emit('send_chat', { code, message: msg });
+    chatInput.value = '';
+    chatInput.focus();
+  }
+
+  chatInput.onkeydown = e => { if(e.key==='Enter') sendChat(); };
+
+  socket.on('chat_message', ({ name, avatar, message, id }) => {
+    if(chatMessages.children.length === 1 && chatMessages.firstChild.nodeType === Node.ELEMENT_NODE && chatMessages.firstChild.style.textAlign === 'center') {
+      chatMessages.innerHTML = '';
+    }
+    const div = document.createElement('div');
+    div.className = 'chat-msg';
+    div.innerHTML = `
+      <div class="chat-msg-avatar">${avatarHtml(avatar)}</div>
+      <div class="chat-msg-content">
+        <span class="chat-msg-name">${escapeHtml(name)}</span>
+        ${escapeHtml(message)}
+      </div>
+    `;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    if(name !== Session.get('name')) soundClick(); // Play a small click for others' messages
+  });
+
   socket.on('phase_upload', () => window.location.href='/upload.html');
   socket.on('error', msg => showToast('❌ '+msg));
   function copyCode() { navigator.clipboard.writeText(code).then(() => showToast('✓ Code kopiert')); }
   function startUpload() { if(role!=='host') return; socket.emit('start_upload',{code}); }
   function leaveRoom() { Session.clear(); window.location.href='/'; }
+
+  function escapeHtml(v) { return String(v).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
 </script>
 </body>
 </html>
