@@ -149,7 +149,20 @@
   socket.on('connect',()=>{
     if(role==='host') socket.emit('host_rejoin',{code,hostName:name,avatar,playerId});
     else socket.emit('join_room',{code,playerName:name,avatar,playerId});
-    setTimeout(()=>socket.emit('request_current_pair',{code}),1500);
+    // Mehrere Versuche das aktuelle Pair zu laden
+    // Server startet Pair 3500ms nach phase_battle
+    let pairRequestAttempts = 0;
+    const maxAttempts = 5;
+    function requestPair() {
+      if (pairRequestAttempts >= maxAttempts) return;
+      pairRequestAttempts++;
+      socket.emit('request_current_pair', {code});
+      // Nochmal versuchen falls kein new_pair kommt (z.B. Timer noch nicht gestartet)
+      setTimeout(() => {
+        if (!currentLeft) requestPair(); // Kein Pair erhalten → retry
+      }, 1500);
+    }
+    setTimeout(requestPair, 3800);
   });
   let hasVoted=false, currentLeft=null, currentRight=null, timerInterval=null, currentTimerEndsAt=0;
   socket.on('new_pair',({pairIndex,totalPairs,bracketRound,timerEndsAt,roundSeconds,left,right})=>{

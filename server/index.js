@@ -198,13 +198,17 @@ io.on('connection', socket => {
     room.state = 'battle';
     // Alle Spieler zur Battle-Seite schicken
     io.to(code).emit('phase_battle');
-    // Kleiner Delay damit alle Zeit haben zu laden
-    setTimeout(() => startCurrentPair(room), 2500);
+    // Mehr Zeit geben damit alle battle.html laden und connecten können
+    // Clients senden request_current_pair nach 1500ms → wir warten 3500ms
+    setTimeout(() => startCurrentPair(room), 3500);
   });
 
   socket.on('request_current_pair', ({ code }) => {
     const room = rooms.get(code);
     if (!room || room.state !== 'battle' || !room.pairs.length) return;
+    // Nur antworten wenn der Timer schon läuft (timerEndsAt gesetzt)
+    // Sonst wartet der Client auf das nächste 'new_pair' vom Server
+    if (!room.timerEndsAt) return;
     const pair = room.pairs[room.currentPair];
     socket.emit('new_pair', {
       pairIndex: room.currentPair,

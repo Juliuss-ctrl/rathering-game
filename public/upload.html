@@ -195,9 +195,20 @@
 
   // Alle Wege zum Battle abfangen
   socket.on('phase_battle', goToBattle);
-  socket.on('new_pair',     goToBattle);
+  // KEIN 'new_pair' -> goToBattle hier! Sonst Race-Condition:
+  // new_pair käme auf upload.html an bevor battle.html geladen ist → Event verpasst.
+  // Stattdessen: battle.html selbst fordert das aktuelle Paar an (request_current_pair).
+
+  socket.on('phase_recap', () => {
+    clearInterval(stateInterval);
+    window.location.href = '/recap.html';
+  });
+
   socket.on('show_results', ({results}) => {
+    // Nur weiterleiten wenn wir wirklich schon im Results-State sind,
+    // nicht während Battle/Recap noch läuft
     Session.set('results', results);
+    clearInterval(stateInterval);
     window.location.href = '/results.html';
   });
 
