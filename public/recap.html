@@ -21,6 +21,10 @@
     .recap-desc-box::before { content:'"'; position:absolute; top:10px; left:12px; font-size:3rem; font-family:serif; color:var(--accent); opacity:0.2; line-height:1; }
     .recap-desc { font-size:1.1rem; color:var(--text); line-height:1.5; font-style:italic; padding-left:10px; }
     .recap-progress { position:fixed; bottom:0; left:0; height:4px; background:var(--accent); transition:width 7s linear; }
+
+    .recap-sidebar { display: flex; flex-direction: column; height: 100%; }
+    .recap-sidebar .chat-box { flex: 1; border-radius: 0; border: none; background: transparent; }
+
     @media(max-width:800px) {
       .recap-card { grid-template-columns:1fr; gap:20px; padding:20px; }
       .recap-media { aspect-ratio:1.2; }
@@ -31,28 +35,49 @@
 </head>
 <body>
 <canvas id="bg-canvas"></canvas>
-<div class="recap-page">
-  <div class="recap-header">
-    <div>
-      <div class="label">Showcase</div>
-      <h2 class="title-md" id="recap-count">Bild 0 / 0</h2>
+
+<div class="layout-with-sidebar">
+  <div class="main-content">
+    <div class="recap-page">
+      <div class="recap-header">
+        <div>
+          <div class="label">Showcase</div>
+          <h2 class="title-md" id="recap-count">Bild 0 / 0</h2>
+        </div>
+        <div class="badge"><span class="dot"></span><span id="code-label">——</span></div>
+      </div>
+
+      <div class="recap-content" id="recap-container">
+        <div style="text-align:center; opacity:0.5;">Warte auf Start…</div>
+      </div>
+
+      <div class="recap-progress" id="recap-progress" style="width:0%"></div>
+
+      <div class="reaction-bar" style="position: absolute; right: 24px;">
+        <button class="reaction-btn" onclick="sendReaction('🔥')">🔥</button>
+        <button class="reaction-btn" onclick="sendReaction('😂')">😂</button>
+        <button class="reaction-btn" onclick="sendReaction('👏')">👏</button>
+        <button class="reaction-btn" onclick="sendReaction('💩')">💩</button>
+      </div>
     </div>
-    <div class="badge"><span class="dot"></span><span id="code-label">——</span></div>
   </div>
 
-  <div class="recap-content" id="recap-container">
-    <div style="text-align:center; opacity:0.5;">Warte auf Start…</div>
-  </div>
-
-  <div class="recap-progress" id="recap-progress" style="width:0%"></div>
-
-  <div class="reaction-bar">
-    <button class="reaction-btn" onclick="sendReaction('🔥')">🔥</button>
-    <button class="reaction-btn" onclick="sendReaction('😂')">😂</button>
-    <button class="reaction-btn" onclick="sendReaction('👏')">👏</button>
-    <button class="reaction-btn" onclick="sendReaction('💩')">💩</button>
-  </div>
+  <aside class="sidebar">
+    <div class="recap-sidebar">
+      <div class="chat-box">
+        <div class="chat-header">💬 Live Chat</div>
+        <div class="chat-messages" id="chat-messages">
+          <div style="color:var(--text3); font-size:0.75rem; text-align:center; margin-top:20px;">Noch keine Nachrichten...</div>
+        </div>
+        <div class="chat-input-wrap">
+          <input class="input" id="chat-input" placeholder="Nachricht..." maxlength="100" autocomplete="off" style="font-size:0.85rem; padding:10px 14px;">
+          <button class="btn btn-primary" onclick="sendChat()" style="padding:0 16px; min-width:auto;">Send</button>
+        </div>
+      </div>
+    </div>
+  </aside>
 </div>
+
 <div id="toast"></div>
 <script src="/socket.io/socket.io.js"></script>
 <script src="shared.js"></script>
@@ -112,15 +137,51 @@
     `;
   }
 
-  socket.on('reaction_received', ({ emoji }) => {
+  socket.on('reaction_received', ({ emoji, senderName }) => {
     const el = document.createElement('div');
     el.className = 'flying-emoji';
-    el.textContent = emoji;
+    const container = document.querySelector('.main-content');
+    el.innerHTML = `
+      <span class="flying-emoji-text">${emoji}</span>
+      ${senderName ? `<span class="flying-emoji-sender">${escapeHtml(senderName)}</span>` : ''}
+    `;
     el.style.setProperty('--rx', (Math.random() * 60 - 30) + 'px');
     el.style.setProperty('--rx-end', (Math.random() * 200 - 100) + 'px');
     el.style.setProperty('--rot', (Math.random() * 360 - 180) + 'deg');
-    document.body.appendChild(el);
+    container.appendChild(el);
     setTimeout(() => el.remove(), 3000);
+  });
+
+  // Chat logic
+  const chatInput = document.getElementById('chat-input');
+  const chatMessages = document.getElementById('chat-messages');
+
+  function sendChat() {
+    const msg = chatInput.value.trim();
+    if(!msg) return;
+    socket.emit('send_chat', { code, message: msg });
+    chatInput.value = '';
+    chatInput.focus();
+  }
+
+  chatInput.onkeydown = e => { if(e.key==='Enter') sendChat(); };
+
+  socket.on('chat_message', ({ name, avatar, message, id }) => {
+    if(chatMessages.children.length === 1 && chatMessages.firstChild.nodeType === Node.ELEMENT_NODE && chatMessages.firstChild.style.textAlign === 'center') {
+      chatMessages.innerHTML = '';
+    }
+    const div = document.createElement('div');
+    div.className = 'chat-msg';
+    div.innerHTML = `
+      <div class="chat-msg-avatar">${avatarHtml(avatar)}</div>
+      <div class="chat-msg-content">
+        <span class="chat-msg-name">${escapeHtml(name)}</span>
+        ${escapeHtml(message)}
+      </div>
+    `;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    if(name !== Session.get('name')) soundClick();
   });
 
   function sendReaction(emoji) {
@@ -130,8 +191,6 @@
 
   socket.on('show_results',({results})=>{Session.set('results',results);window.location.href='/results.html';});
   socket.on('error',msg=>showToast('❌ '+msg));
-
-  function escapeHtml(v){ return String(v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 </script>
 </body>
 </html>

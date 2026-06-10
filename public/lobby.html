@@ -20,15 +20,6 @@
     #qr-img { border-radius:10px; display:none; width:160px; height:160px; }
     
     .lobby-content { display:flex; flex-direction:column; gap:20px; }
-    .chat-box { display:flex; flex-direction:column; height:300px; padding:0; overflow:hidden; }
-    .chat-header { padding:14px 18px; border-bottom:1px solid var(--border); font-size:0.75rem; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:0.05em; display:flex; align-items:center; gap:8px; }
-    .chat-messages { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; scrollbar-width: thin; }
-    .chat-input-wrap { padding:12px; border-top:1px solid var(--border); display:flex; gap:8px; }
-    .chat-msg { display:flex; gap:10px; animation: msg-in 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.28); }
-    @keyframes msg-in { from { opacity:0; transform: translateY(10px) scale(0.95); } to { opacity:1; transform: none; } }
-    .chat-msg-avatar { width:32px; height:32px; border-radius:10px; background:var(--surface2); border:1px solid var(--border2); display:flex; align-items:center; justify-content:center; font-size:1rem; flex-shrink:0; }
-    .chat-msg-content { background:rgba(255,255,255,0.03); border-radius:12px; padding:8px 12px; font-size:0.88rem; color:var(--text); max-width:85%; border:1px solid var(--border); }
-    .chat-msg-name { display:block; font-size:0.68rem; font-weight:700; color:var(--accent); margin-bottom:2px; }
   </style>
 </head>
 <body>
@@ -166,8 +157,6 @@
   function copyCode() { navigator.clipboard.writeText(code).then(() => showToast('✓ Code kopiert')); }
   function startUpload() { if(role!=='host') return; socket.emit('start_upload',{code}); }
   function leaveRoom() { Session.clear(); window.location.href='/'; }
-
-  function escapeHtml(v) { return String(v).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
 </script>
 </body>
 </html>

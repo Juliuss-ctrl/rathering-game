@@ -55,8 +55,33 @@
 <script>
   initStarfield(); initThemeToggle();
   const role=Session.get('role'), code=Session.get('code'), name=Session.get('name'), avatar=Session.get('avatar')||'🙂', playerId=Session.get('playerId')||getPlayerId();
-  if(!code) window.location.href='/';
+  if(!code) window.location.href=\'/\';
   const socket=io();
+
+  let currentPlayers = []; // Store current player list from server updates
+
+  function updateBattleStartButtons(players) {
+    currentPlayers = players; // Update the global player list
+    const uploadedPlayersCount = players.filter(p => p.hasImage).length;
+    const btnStartBattle = document.getElementById('btn-start-battle');
+    const btnForceStart = document.getElementById('btn-force-start');
+    
+    if (role === 'host') {
+      document.getElementById('players-status').style.display = 'block';
+
+      if (btnStartBattle.style.display === 'flex') { // This state is set by all_uploaded handler
+         btnStartBattle.disabled = uploadedPlayersCount < 2;
+         btnForceStart.style.display = 'none'; // Hide force start if all are explicitly uploaded
+      } else { // Normal update cycle, not all uploaded yet
+         btnStartBattle.style.display = 'none'; // Keep normal battle start hidden
+         btnForceStart.style.display = uploadedPlayersCount >= 1 ? 'flex' : 'none'; // Show if at least one player (host) has uploaded
+         btnForceStart.disabled = uploadedPlayersCount < 2; // Disable if less than 2 uploaded players
+      }
+    } else {
+      btnStartBattle.style.display = 'none';
+      btnForceStart.style.display = 'none';
+    }
+  }
 
   socket.on('connect',()=>{
     if(role==='host') socket.emit('host_rejoin',{code,hostName:name,avatar,playerId});

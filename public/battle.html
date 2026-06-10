@@ -18,7 +18,7 @@
 .battle-q{text-align:center;font-family:var(--font-head);font-size:clamp(1.3rem,2.5vw,2rem);font-weight:700;letter-spacing:-0.01em;color:var(--text);padding-top:6px;}
 .arena{flex:1;display:flex;align-items:center;justify-content:center;padding:10px 36px;gap:20px;min-height:0;}
 .battle-card{flex:1;max-width:500px;min-height:0;max-height:100%;}
-.battle-card img{max-width:100%;max-height:calc(100vh-280px);object-fit:contain;border-radius:10px;}
+.battle-card img{max-width:100%;max-height:calc(100vh - 280px);object-fit:contain;border-radius:10px;}
 .card-name{font-family:var(--font-head);font-size:1.1rem;font-weight:600;color:var(--text);text-align:center;margin-top:10px;letter-spacing:-0.01em;}
 .battle-avatar{width:44px;height:44px;font-size:2rem;margin-top:10px;line-height:1;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:50%;}
 .card-desc{font-size:0.8rem;color:var(--text3);text-align:center;margin-top:3px;}
@@ -28,6 +28,18 @@
 .hint{font-size:0.68rem;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;}
 .voted-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.04);border-radius:var(--r2);pointer-events:none;opacity:0;transition:opacity 0.2s;font-size:3rem;}
 .battle-card.voted .voted-overlay{opacity:1;}
+
+.battle-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.battle-sidebar .chat-box {
+  flex: 1;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+}
 
 /* ── Mobile ── */
 @media(max-width:700px){
@@ -67,43 +79,64 @@
 </head>
 <body>
 <canvas id="bg-canvas"></canvas>
-<div class="battle-page">
-  <div class="battle-header">
-    <div class="battle-meta">
-      <span class="label" id="round-label">Runde 1 / ?</span>
-      <div class="badge"><span class="dot"></span><span id="code-label">——</span></div>
+
+<div class="layout-with-sidebar">
+  <div class="main-content">
+    <div class="battle-page">
+      <div class="battle-header">
+        <div class="battle-meta">
+          <span class="label" id="round-label">Runde 1 / ?</span>
+          <div class="badge"><span class="dot"></span><span id="code-label">——</span></div>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+        <div class="battle-status">
+          <div class="timer-pill" id="timer-pill"><span class="timer-dot"></span><span id="timer-label">15s</span></div>
+        </div>
+        <div class="battle-q">Was gefällt dir besser?</div>
+      </div>
+
+      <div class="arena">
+        <div class="battle-card glass-card" id="card-left" onclick="castVote('left')">
+          <div style="padding:22px;display:flex;flex-direction:column;align-items:center;height:100%;"><div id="img-left"><div class="no-image">Lädt…</div></div><div class="battle-avatar" id="avatar-left">🙂</div><div class="card-name" id="name-left">—</div><div class="card-desc" id="desc-left"></div></div>
+          <div class="voted-overlay">✓</div>
+        </div>
+        <div class="vs-badge">VS</div>
+        <div class="battle-card glass-card" id="card-right" onclick="castVote('right')">
+          <div style="padding:22px;display:flex;flex-direction:column;align-items:center;height:100%;"><div id="img-right"><div class="no-image">Lädt…</div></div><div class="battle-avatar" id="avatar-right">🙂</div><div class="card-name" id="name-right">—</div><div class="card-desc" id="desc-right"></div></div>
+          <div class="voted-overlay">✓</div>
+        </div>
+      </div>
+
+      <div class="reaction-bar" style="position: absolute; right: 24px;">
+        <button class="reaction-btn" onclick="sendReaction('🔥')">🔥</button>
+        <button class="reaction-btn" onclick="sendReaction('😂')">😂</button>
+        <button class="reaction-btn" onclick="sendReaction('👏')">👏</button>
+        <button class="reaction-btn" onclick="sendReaction('💩')">💩</button>
+      </div>
+
+      <div class="battle-footer">
+        <div id="vote-status"></div>
+        <div class="hint">Klicke auf dein Lieblingsbild</div>
+      </div>
     </div>
-    <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
-    <div class="battle-status">
-      <div class="timer-pill" id="timer-pill"><span class="timer-dot"></span><span id="timer-label">15s</span></div>
-    </div>
-    <div class="battle-q">Was gefällt dir besser?</div>
   </div>
 
-  <div class="arena">
-    <div class="battle-card glass-card" id="card-left" onclick="castVote('left')">
-      <div style="padding:22px;display:flex;flex-direction:column;align-items:center;height:100%;"><div id="img-left"><div class="no-image">Lädt…</div></div><div class="battle-avatar" id="avatar-left">🙂</div><div class="card-name" id="name-left">—</div><div class="card-desc" id="desc-left"></div></div>
-      <div class="voted-overlay">✓</div>
+  <aside class="sidebar">
+    <div class="battle-sidebar">
+      <div class="chat-box">
+        <div class="chat-header">💬 Live Chat</div>
+        <div class="chat-messages" id="chat-messages">
+          <div style="color:var(--text3); font-size:0.75rem; text-align:center; margin-top:20px;">Noch keine Nachrichten...</div>
+        </div>
+        <div class="chat-input-wrap">
+          <input class="input" id="chat-input" placeholder="Nachricht..." maxlength="100" autocomplete="off" style="font-size:0.85rem; padding:10px 14px;">
+          <button class="btn btn-primary" onclick="sendChat()" style="padding:0 16px; min-width:auto;">Send</button>
+        </div>
+      </div>
     </div>
-    <div class="vs-badge">VS</div>
-    <div class="battle-card glass-card" id="card-right" onclick="castVote('right')">
-      <div style="padding:22px;display:flex;flex-direction:column;align-items:center;height:100%;"><div id="img-right"><div class="no-image">Lädt…</div></div><div class="battle-avatar" id="avatar-right">🙂</div><div class="card-name" id="name-right">—</div><div class="card-desc" id="desc-right"></div></div>
-      <div class="voted-overlay">✓</div>
-    </div>
-  </div>
-
-  <div class="reaction-bar">
-    <button class="reaction-btn" onclick="sendReaction('🔥')">🔥</button>
-    <button class="reaction-btn" onclick="sendReaction('😂')">😂</button>
-    <button class="reaction-btn" onclick="sendReaction('👏')">👏</button>
-    <button class="reaction-btn" onclick="sendReaction('💩')">💩</button>
-  </div>
-
-  <div class="battle-footer">
-    <div id="vote-status"></div>
-    <div class="hint">Klicke auf dein Lieblingsbild</div>
-  </div>
+  </aside>
 </div>
+
 <div id="toast"></div>
 <script src="/socket.io/socket.io.js"></script>
 <script src="shared.js"></script>
@@ -163,6 +196,8 @@
   socket.on('reaction_received', ({ emoji, senderName }) => {
     const el = document.createElement('div');
     el.className = 'flying-emoji';
+    // Ensure flying emojis stay within the main content area
+    const container = document.querySelector('.main-content');
     el.innerHTML = `
       <span class="flying-emoji-text">${emoji}</span>
       ${senderName ? `<span class="flying-emoji-sender">${escapeHtml(senderName)}</span>` : ''}
@@ -170,11 +205,41 @@
     el.style.setProperty('--rx', (Math.random() * 60 - 30) + 'px');
     el.style.setProperty('--rx-end', (Math.random() * 200 - 100) + 'px');
     el.style.setProperty('--rot', (Math.random() * 360 - 180) + 'deg');
-    document.body.appendChild(el);
+    container.appendChild(el);
     setTimeout(() => el.remove(), 3000);
   });
 
-  function escapeHtml(v) { return String(v).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+  // Chat logic
+  const chatInput = document.getElementById('chat-input');
+  const chatMessages = document.getElementById('chat-messages');
+
+  function sendChat() {
+    const msg = chatInput.value.trim();
+    if(!msg) return;
+    socket.emit('send_chat', { code, message: msg });
+    chatInput.value = '';
+    chatInput.focus();
+  }
+
+  chatInput.onkeydown = e => { if(e.key==='Enter') sendChat(); };
+
+  socket.on('chat_message', ({ name, avatar, message, id }) => {
+    if(chatMessages.children.length === 1 && chatMessages.firstChild.nodeType === Node.ELEMENT_NODE && chatMessages.firstChild.style.textAlign === 'center') {
+      chatMessages.innerHTML = '';
+    }
+    const div = document.createElement('div');
+    div.className = 'chat-msg';
+    div.innerHTML = `
+      <div class="chat-msg-avatar">${avatarHtml(avatar)}</div>
+      <div class="chat-msg-content">
+        <span class="chat-msg-name">${escapeHtml(name)}</span>
+        ${escapeHtml(message)}
+      </div>
+    `;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    if(name !== Session.get('name')) soundClick();
+  });
 
   function sendReaction(emoji) {
     socket.emit('send_reaction', { code, emoji });
