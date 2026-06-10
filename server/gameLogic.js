@@ -120,9 +120,9 @@ function allUploaded(room) {
 }
 
 function buildPairs(room) {
+  // Alle Spieler nehmen, auch ohne Bild (imagePath null = kein Bild hochgeladen)
   const imgs = room.players
-    .filter(p => p.imagePath)
-    .map(p => ({ playerId: p.playerId, name: p.name, avatar: p.avatar || DEFAULT_AVATAR, path: p.imagePath, desc: p.imageDesc }));
+    .map(p => ({ playerId: p.playerId, name: p.name, avatar: p.avatar || DEFAULT_AVATAR, path: p.imagePath || null, desc: p.imageDesc || p.name }));
 
   shuffle(imgs);
   room.currentPair = 0;
@@ -236,11 +236,21 @@ function buildTournamentRound(room, contestants) {
   room.votedThisRound = new Set();
   room.pairVotes = {};
 
+  // Wenn nur 1 Spieler -> direkt Gewinner, kein Pair nötig
+  if (contestants.length === 1) {
+    room.roundWinners.push(contestants[0]);
+    return;
+  }
+
   for (let i = 0; i < contestants.length; i += 2) {
     const left = contestants[i];
     const right = contestants[i + 1];
-    if (right) room.pairs.push([left, right]);
-    else room.roundWinners.push(left);
+    if (right) {
+      room.pairs.push([left, right]);
+    } else {
+      // Freilos bei ungerader Anzahl
+      room.roundWinners.push(left);
+    }
   }
 }
 
