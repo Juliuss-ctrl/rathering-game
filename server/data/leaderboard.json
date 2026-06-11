@@ -2,7 +2,7 @@
   "leaderboard": [
     {
       "playerId": "p1",
-      "name": "B",
+      "name": "Michi Darthe",
       "avatar": "🙂",
       "imagePath": "/x1.jpg",
       "points": 3,
@@ -11,7 +11,7 @@
     },
     {
       "playerId": "p4",
-      "name": "E",
+      "name": "Elias Gagelmann",
       "avatar": "🙂",
       "imagePath": "/x4.jpg",
       "points": 2,
@@ -20,7 +20,7 @@
     },
     {
       "playerId": "p3",
-      "name": "D",
+      "name": "Theo",
       "avatar": "🙂",
       "imagePath": "/x3.jpg",
       "points": 1,
